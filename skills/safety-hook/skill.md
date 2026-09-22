@@ -116,12 +116,35 @@ Read operations are generally allowed:
 | `/proc/*/environ` | Process environment |
 | `echo $AWS_SECRET*` | Credential echoing |
 
-### Bypass Prevention
+### Bypass Prevention (bash)
 
 | Pattern | Reason |
 |---------|--------|
 | `python* boto3` | Direct AWS SDK |
 | `curl *.amazonaws.com` | Direct API access |
+
+### Eval Kernel Protection (Python)
+
+| Pattern | Reason |
+|---------|--------|
+| `import boto3` | AWS SDK import |
+| `boto3.client()` | SDK client creation |
+| `import kubernetes` | K8s client import |
+| `client.CoreV1Api()` | K8s API instantiation |
+| `os.environ["AWS_*"]` | Credential access |
+| `subprocess.run(["kubectl"...])` | CLI bypass |
+
+### Eval Kernel Protection (JavaScript)
+
+| Pattern | Reason |
+|---------|--------|
+| `@aws-sdk/client-*` | AWS SDK import |
+| `new EKSClient()` | SDK client creation |
+| `@kubernetes/client-node` | K8s client import |
+| `new k8s.CoreV1Api()` | K8s API instantiation |
+| `process.env.AWS_*` | Credential access |
+| `child_process.exec("kubectl"...)` | CLI bypass |
+| `Bun.spawn(["aws"...])` | Bun shell bypass |
 
 ## Block Messages
 
@@ -146,7 +169,7 @@ This agent has read-only infrastructure access.
 
 1. **Not IAM-based**: This hook is application-level filtering. The underlying AWS credentials may have broader permissions.
 
-2. **Bypass risk**: If the agent can write files and execute them, or use eval with boto3, it could potentially bypass the hook. The hook blocks common patterns but is not a security boundary.
+2. **Eval protection scope**: The eval kernel protection blocks common SDK patterns but cannot catch all possible code obfuscation. Defense in depth is recommended.
 
 3. **Allowlist maintenance**: New kubectl subcommands won't be allowed until added to the allowlist.
 
