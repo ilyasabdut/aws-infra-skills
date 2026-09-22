@@ -102,7 +102,11 @@ The safety hook is optimized for minimal latency (~5ms per command check). Optim
 - `bash -c` / `sh -c` with dangerous kubectl/aws commands
 - `eval` with dangerous kubectl/aws commands
 - `xargs aws/kubectl` and `| aws/kubectl` with mutation verbs
+- `$(dangerous)` and `` `dangerous` `` command substitution
+- `<(dangerous)` process substitution
 - `curl`/`wget` to `*.amazonaws.com`
+- `node`/`bun` with `@aws-sdk`
+- `declare -x`, `export -p` (environment inspection)
 
 ### Blocked (eval kernel bypass)
 - `import boto3` / `from boto3 import` in Python eval
