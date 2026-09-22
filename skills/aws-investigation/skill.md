@@ -1,6 +1,6 @@
 ---
 name: AWS Investigation
-description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, ACM, Cognito, OpenSearch, Redshift, and Athena.
+description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, ACM, Cognito, OpenSearch, Redshift, Athena, and CloudTrail.
 ---
 
 # AWS Investigation Skill
@@ -41,6 +41,7 @@ Use this skill when investigating:
 - OpenSearch domains and cluster health
 - Redshift clusters and query logs
 - Athena workgroups and query executions
+- CloudTrail API activity and audit logs
 
 ## Quick Reference
 
@@ -1143,6 +1144,47 @@ aws athena batch-get-query-execution --query-execution-ids <id1> <id2> \
 ```bash
 aws athena get-work-group --work-group <workgroup-name> \
   --query 'WorkGroup.Configuration.ResultConfiguration.OutputLocation'
+```
+
+## CloudTrail Investigation
+
+### List trails
+```bash
+aws cloudtrail describe-trails
+aws cloudtrail get-trail-status --name <trail-name>
+```
+
+### Lookup events
+```bash
+# Recent events (last 90 days)
+aws cloudtrail lookup-events --max-results 20
+
+# Events by username
+aws cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=Username,AttributeValue=<username>
+
+# Events by event name (API call)
+aws cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=EventName,AttributeValue=DeleteBucket
+
+# Events by resource
+aws cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=ResourceName,AttributeValue=<resource-name>
+
+# Events in time range
+aws cloudtrail lookup-events \
+  --start-time $(date -u -v-24H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ)
+```
+
+### Event selectors (what's being logged)
+```bash
+aws cloudtrail get-event-selectors --trail-name <trail-name>
+```
+
+### Insight selectors (anomaly detection)
+```bash
+aws cloudtrail get-insight-selectors --trail-name <trail-name>
 ```
 
 ---
