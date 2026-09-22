@@ -7,8 +7,8 @@ Skills for AI agents to investigate AWS and Kubernetes infrastructure without th
 | Skill | Description |
 |-------|-------------|
 | **k8s-investigation** | kubectl patterns for pods, deployments, nodes, events, logs |
-| **aws-investigation** | AWS CLI patterns for EKS, EC2, CloudWatch, S3, load balancers |
-| **diagnostic-workflows** | Step-by-step procedures for CrashLoopBackOff, OOMKilled, etc. |
+| **aws-investigation** | AWS CLI patterns for EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, Route53, Secrets Manager, SSM |
+| **diagnostic-workflows** | Step-by-step procedures for pod crashes, RDS, Lambda, SQS, ALB issues |
 | **safety-hook** | Documentation + bash script to block dangerous operations |
 
 ## Installation
