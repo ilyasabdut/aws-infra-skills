@@ -25,8 +25,8 @@ block() {
 # FAST PATH: Early exit for non-infrastructure commands
 # ============================================================================
 
-# Quick check - if not kubectl/aws/env/printenv/python/curl, allow immediately
-if [[ ! "$CMD" =~ (^|[[:space:]])(kubectl|aws|env|printenv|export|set|python|curl|wget)[[:space:]] ]] && \
+# Quick check - if not kubectl/aws/env/printenv/python/curl/IaC/shell, allow immediately
+if [[ ! "$CMD" =~ (^|[[:space:]])(kubectl|aws|env|printenv|export|set|python|curl|wget|terraform|pulumi|eksctl|helm|bash|sh)[[:space:]] ]] && \
    [[ ! "$CMD" =~ ^(env|printenv|export|set)$ ]]; then
     exit 0
 fi
@@ -154,6 +154,18 @@ fi
 # Block curl/wget to AWS APIs
 if [[ "$CMD" =~ (curl|wget).*\.amazonaws\.com ]]; then
     block "Direct AWS API access not permitted. Use aws CLI."
+fi
+# Block IaC tools that can modify infrastructure
+if [[ "$CMD" =~ (^|[[:space:]])(terraform|pulumi|eksctl|helm)[[:space:]] ]]; then
+    TOOL="${BASH_REMATCH[2]}"
+    block "$TOOL is not permitted. This agent has read-only infrastructure access."
+fi
+
+# Block shell indirection (sh -c, bash -c) with dangerous commands
+if [[ "$CMD" =~ (sh|bash)[[:space:]]+-c[[:space:]] ]]; then
+    if [[ "$CMD" =~ (kubectl[[:space:]]+(delete|apply|exec|scale)|aws[[:space:]]+iam|aws[[:space:]]+[a-z]+[[:space:]]+(delete-|create-|terminate-)) ]]; then
+        block "Shell indirection with dangerous commands is not permitted."
+    fi
 fi
 
 # ============================================================================
