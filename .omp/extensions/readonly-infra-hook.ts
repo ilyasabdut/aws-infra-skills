@@ -71,6 +71,7 @@ const AWS_MUTATION_VERBS = [
 	"start-",
 	"stop-",
 	"reboot-",
+	"add-",
 	"run-instances",
 	"run-task",
 ];
