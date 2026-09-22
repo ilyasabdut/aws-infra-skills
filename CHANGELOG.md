@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.7] - 2026-09-22
+
+### Added
+- Chained command detection (`;`, `&&`, `||` operators)
+- Prevents bypass via `kubectl get pods; kubectl delete pod`
+
+### Tests
+- Extended test suite from 46 to 51 tests
+
 ## [1.3.6] - 2026-09-22
 
 ### Added
@@ -128,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.3.7]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.6...v1.3.7
 [1.3.6]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.5...v1.3.6
 [1.3.5]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.3...v1.3.4
