@@ -1,6 +1,6 @@
 ---
 name: AWS Investigation
-description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, and WAF.
+description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, and ACM.
 ---
 
 # AWS Investigation Skill
@@ -32,6 +32,11 @@ Use this skill when investigating:
 - EventBridge rules and failed invocations
 - CloudFront distributions and cache invalidations
 - WAF web ACLs and blocked requests
+- Kinesis streams and throughput metrics
+- CodeBuild projects and build logs
+- CodePipeline executions and stage status
+- Auto Scaling groups and scaling activities
+- ACM certificates and validation status
 
 ## Quick Reference
 
@@ -853,6 +858,158 @@ aws cloudwatch get-metric-statistics \
   --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
   --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
   --period 300 --statistics Sum
+```
+
+## Kinesis Investigation
+
+### List streams
+```bash
+# Kinesis Data Streams
+aws kinesis list-streams
+aws kinesis describe-stream --stream-name <stream-name>
+aws kinesis describe-stream-summary --stream-name <stream-name>
+
+# Kinesis Firehose
+aws firehose list-delivery-streams
+aws firehose describe-delivery-stream --delivery-stream-name <stream-name>
+```
+
+### Shard iterator and records (read sample)
+```bash
+# Get shard iterator
+aws kinesis get-shard-iterator \
+  --stream-name <stream-name> \
+  --shard-id <shard-id> \
+  --shard-iterator-type LATEST
+
+# Note: get-records requires the iterator from above
+```
+
+### Kinesis metrics
+```bash
+# Incoming records
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Kinesis \
+  --metric-name IncomingRecords \
+  --dimensions Name=StreamName,Value=<stream-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+
+# Read/write throughput exceeded
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Kinesis \
+  --metric-name ReadProvisionedThroughputExceeded \
+  --dimensions Name=StreamName,Value=<stream-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+```
+
+## CodeBuild Investigation
+
+### List projects
+```bash
+aws codebuild list-projects
+aws codebuild batch-get-projects --names <project-name>
+```
+
+### List builds
+```bash
+# Recent builds for a project
+aws codebuild list-builds-for-project --project-name <project-name> --sort-order DESCENDING
+
+# Build details
+aws codebuild batch-get-builds --ids <build-id>
+```
+
+### Build logs
+```bash
+# Get log group from build details, then:
+aws logs filter-log-events \
+  --log-group-name /aws/codebuild/<project-name> \
+  --limit 100
+```
+
+## CodePipeline Investigation
+
+### List pipelines
+```bash
+aws codepipeline list-pipelines
+aws codepipeline get-pipeline --name <pipeline-name>
+```
+
+### Pipeline state
+```bash
+aws codepipeline get-pipeline-state --name <pipeline-name>
+```
+
+### Pipeline executions
+```bash
+aws codepipeline list-pipeline-executions --pipeline-name <pipeline-name> --max-results 10
+aws codepipeline get-pipeline-execution \
+  --pipeline-name <pipeline-name> \
+  --pipeline-execution-id <execution-id>
+```
+
+### Action execution details
+```bash
+aws codepipeline list-action-executions \
+  --pipeline-name <pipeline-name> \
+  --filter pipelineExecutionId=<execution-id>
+```
+
+## Auto Scaling Investigation
+
+### Auto Scaling Groups
+```bash
+aws autoscaling describe-auto-scaling-groups
+aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names <asg-name>
+```
+
+### Scaling activities
+```bash
+aws autoscaling describe-scaling-activities --auto-scaling-group-name <asg-name> --max-records 20
+```
+
+### Scaling policies
+```bash
+aws autoscaling describe-policies --auto-scaling-group-name <asg-name>
+```
+
+### Scheduled actions
+```bash
+aws autoscaling describe-scheduled-actions --auto-scaling-group-name <asg-name>
+```
+
+### Instance health
+```bash
+aws autoscaling describe-auto-scaling-instances
+```
+
+## ACM (Certificate Manager) Investigation
+
+### List certificates
+```bash
+aws acm list-certificates
+aws acm list-certificates --certificate-statuses ISSUED PENDING_VALIDATION EXPIRED
+```
+
+### Certificate details
+```bash
+aws acm describe-certificate --certificate-arn <cert-arn>
+```
+
+### Certificate validation status
+```bash
+aws acm describe-certificate --certificate-arn <cert-arn> \
+  --query 'Certificate.{Status:Status,DomainValidationOptions:DomainValidationOptions}'
+```
+
+### Expiring certificates
+```bash
+aws acm list-certificates --certificate-statuses ISSUED \
+  --query 'CertificateSummaryList[?NotAfter<=`2026-10-22`]'
 ```
 
 ---
