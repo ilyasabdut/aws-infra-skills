@@ -143,6 +143,21 @@ Read operations are generally allowed:
 | `xargs aws/kubectl` | Pipe bypass |
 | `| aws/kubectl` | Pipe bypass |
 
+### Command Substitution Blocking
+
+| Pattern | Reason |
+|---------|--------|
+| `$(kubectl delete...)` | Subshell bypass |
+| `` `aws iam...` `` | Backtick bypass |
+| `$(aws terminate-...)` | Subshell bypass |
+
+### Environment Inspection Blocking
+
+| Pattern | Reason |
+|---------|--------|
+| `declare -x` | Lists exported variables |
+| `export -p` | Prints exports |
+
 ### Eval Kernel Protection (Python)
 
 | Pattern | Reason |
