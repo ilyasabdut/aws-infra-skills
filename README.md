@@ -118,7 +118,8 @@ Claude will use the investigation skills to run appropriate read-only commands.
 
 This is **application-level filtering**, not IAM-based:
 
-- The hook blocks commands before execution
+- The hook blocks bash commands before execution
+- The hook blocks Python/JS eval with AWS/K8s SDK patterns
 - Underlying AWS credentials may have broader permissions
 - Defense in depth: combine with short-lived STS credentials
 
