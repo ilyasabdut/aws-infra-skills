@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-09-22
+
+### Added
+- **aws-investigation skill**: RDS investigation (instances, clusters, events, logs, Performance Insights)
+- **aws-investigation skill**: Lambda investigation (functions, metrics, logs)
+- **aws-investigation skill**: SQS investigation (queues, depth, dead letter queues)
+- **aws-investigation skill**: SNS investigation (topics, subscriptions)
+- **aws-investigation skill**: Route53 investigation (zones, records, health checks)
+- **aws-investigation skill**: Secrets Manager investigation (metadata, rotation status)
+- **aws-investigation skill**: SSM Parameter Store investigation
+
+### Documentation
+- Updated chained command blocking docs across README, skills README, and safety-hook skill
+
 ## [1.3.8] - 2026-09-22
 
 ### Added
@@ -146,6 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.4.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.8...v1.4.0
 [1.3.8]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.7...v1.3.8
 [1.3.7]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.6...v1.3.7
 [1.3.6]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.5...v1.3.6
