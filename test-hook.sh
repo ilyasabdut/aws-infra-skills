@@ -92,5 +92,16 @@ test_block "pipe kubectl delete" 'cat pods.txt | kubectl delete -f -'
 test_block "node aws-sdk" 'node -e "require(\"@aws-sdk/client-ec2\")"'
 
 echo ""
+echo "--- Command substitution tests ---"
+test_block "subshell kubectl delete" 'echo $(kubectl delete pod test)'
+test_block "backtick aws iam" 'echo `aws iam list-users`'
+test_block "subshell aws terminate" 'VAR=$(aws ec2 terminate-instances --instance-ids i-123)'
+
+echo ""
+echo "--- Environment inspection tests ---"
+test_block "declare -x" "declare -x"
+test_block "export -p" "export -p"
+
+echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="
 [ $FAIL -eq 0 ]
