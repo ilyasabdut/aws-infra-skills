@@ -151,6 +151,8 @@ Read operations are generally allowed:
 | `` `aws iam...` `` | Backtick bypass |
 | `$(aws terminate-...)` | Subshell bypass |
 | `<(kubectl delete...)` | Process substitution bypass |
+| `<<< "kubectl delete..."` | Here-string bypass |
+| `<<EOF kubectl delete EOF` | Heredoc bypass |
 
 ### Environment Inspection Blocking
 
