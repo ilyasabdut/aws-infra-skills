@@ -24,3 +24,6 @@ Thumbs.db
 *.pem
 *.key
 credentials.json
+
+# Distribution packages (generated)
+dist/
