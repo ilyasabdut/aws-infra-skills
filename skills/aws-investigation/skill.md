@@ -494,6 +494,63 @@ aws sns get-topic-attributes --topic-arn <topic-arn>
 ```bash
 aws sns list-subscriptions-by-topic --topic-arn <topic-arn>
 ```
+
+## Route53 Investigation
+
+### List hosted zones
+```bash
+aws route53 list-hosted-zones
+```
+
+### List records in zone
+```bash
+aws route53 list-resource-record-sets --hosted-zone-id <zone-id>
+```
+
+### Health checks
+```bash
+aws route53 list-health-checks
+aws route53 get-health-check-status --health-check-id <health-check-id>
+```
+
+### Query DNS resolution (test)
+```bash
+aws route53 test-dns-answer \
+  --hosted-zone-id <zone-id> \
+  --record-name <domain> \
+  --record-type A
+```
+
+## Secrets Manager Investigation
+
+### List secrets
+```bash
+aws secretsmanager list-secrets
+```
+
+### Secret metadata (not the value)
+```bash
+aws secretsmanager describe-secret --secret-id <secret-name>
+```
+
+### Rotation status
+```bash
+aws secretsmanager describe-secret --secret-id <secret-name> \
+  --query '{Name:Name,RotationEnabled:RotationEnabled,LastRotated:LastRotatedDate}'
+```
+
+## SSM Parameter Store Investigation
+
+### List parameters
+```bash
+aws ssm describe-parameters
+aws ssm describe-parameters --parameter-filters "Key=Name,Values=<prefix>"
+```
+
+### Parameter metadata
+```bash
+aws ssm describe-parameters --parameter-filters "Key=Name,Values=<param-name>"
+```
 ---
 
 **Important**: This skill only covers read operations. Mutating operations (create, delete, modify, update) should be blocked by a safety hook in production agent environments.
