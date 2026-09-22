@@ -100,6 +100,22 @@ const AWS_MUTATION_VERBS = [
 	// Compute
 	"run-instances",
 	"run-task",
+	// Execution
+	"execute-",
+	// Configuration
+	"set-",
+	"reset-",
+	// Recovery
+	"restore-",
+	"failover-",
+	"promote-",
+	"revert-",
+	// Movement
+	"move-",
+	// Batch mutations
+	"batch-write-",
+	"batch-delete-",
+	"batch-put-",
 	// Other
 	"add-",
 	"write-",
