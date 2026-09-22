@@ -440,6 +440,166 @@ kubectl describe nodes | grep -A5 "Conditions:"
 kubectl get pods -n kube-system
 ```
 
+### RDS Connection Issues
+
+```bash
+# 1. Check RDS instance status
+aws rds describe-db-instances --db-instance-identifier <instance> \
+  --query 'DBInstances[].{Status:DBInstanceStatus,Endpoint:Endpoint.Address}'
+
+# 2. Check recent events
+aws rds describe-events --source-identifier <instance> --source-type db-instance --duration 60
+
+# 3. Check security group allows ingress
+aws rds describe-db-instances --db-instance-identifier <instance> \
+  --query 'DBInstances[].VpcSecurityGroups[].VpcSecurityGroupId' --output text | \
+  xargs -I {} aws ec2 describe-security-groups --group-ids {}
+
+# 4. Check subnet group connectivity
+aws rds describe-db-subnet-groups --db-subnet-group-name <subnet-group>
+
+# 5. Check CloudWatch for connection count
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/RDS \
+  --metric-name DatabaseConnections \
+  --dimensions Name=DBInstanceIdentifier,Value=<instance> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Average Maximum
+```
+
+**Likely causes:**
+- Security group not allowing inbound on DB port (3306/5432)
+- Instance in wrong subnet (not reachable from app)
+- Max connections reached
+- Instance stopped or in maintenance
+
+### Lambda Timeout/Cold Start Issues
+
+```bash
+# 1. Check function configuration
+aws lambda get-function-configuration --function-name <function> \
+  --query '{Timeout:Timeout,Memory:MemorySize,Runtime:Runtime}'
+
+# 2. Check recent invocations - duration
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Duration \
+  --dimensions Name=FunctionName,Value=<function> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average Maximum
+
+# 3. Check errors
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Errors \
+  --dimensions Name=FunctionName,Value=<function> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 4. Check throttles
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Throttles \
+  --dimensions Name=FunctionName,Value=<function> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 5. Check logs for timeout/error
+aws logs filter-log-events \
+  --log-group-name /aws/lambda/<function> \
+  --filter-pattern "?ERROR ?Task timed out ?REPORT"
+```
+
+**Likely causes:**
+- Timeout too low for workload
+- Cold start in VPC (add provisioned concurrency)
+- Memory too low (increases CPU proportionally)
+- External dependency slow (DB, API)
+
+### SQS Dead Letter Queue Investigation
+
+```bash
+# 1. Check DLQ message count
+aws sqs get-queue-attributes \
+  --queue-url <dlq-url> \
+  --attribute-names ApproximateNumberOfMessages
+
+# 2. Check source queue's redrive policy
+aws sqs get-queue-attributes \
+  --queue-url <source-queue-url> \
+  --attribute-names RedrivePolicy
+
+# 3. Peek at DLQ messages (receive but don't delete)
+aws sqs receive-message \
+  --queue-url <dlq-url> \
+  --max-number-of-messages 5 \
+  --visibility-timeout 0
+
+# 4. Check Lambda consumer errors (if Lambda processes queue)
+aws logs filter-log-events \
+  --log-group-name /aws/lambda/<consumer-function> \
+  --filter-pattern "ERROR"
+
+# 5. Check source queue age of oldest message
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/SQS \
+  --metric-name ApproximateAgeOfOldestMessage \
+  --dimensions Name=QueueName,Value=<queue-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Maximum
+```
+
+**Likely causes:**
+- Consumer function failing repeatedly
+- Message format changed, consumer can't parse
+- Downstream dependency failing
+- maxReceiveCount too low for retry-able errors
+
+### Load Balancer Health Check Failures
+
+```bash
+# 1. Check target health
+aws elbv2 describe-target-health --target-group-arn <tg-arn>
+
+# 2. Check health check configuration
+aws elbv2 describe-target-groups --target-group-arns <tg-arn> \
+  --query 'TargetGroups[].{Path:HealthCheckPath,Port:HealthCheckPort,Interval:HealthCheckIntervalSeconds,Threshold:UnhealthyThresholdCount}'
+
+# 3. Check security group allows health check
+aws elbv2 describe-load-balancers --load-balancer-arns <lb-arn> \
+  --query 'LoadBalancers[].SecurityGroups' --output text | \
+  xargs -I {} aws ec2 describe-security-groups --group-ids {}
+
+# 4. Check target security group allows LB
+# (targets need to allow inbound from LB security group)
+
+# 5. Check unhealthy host count metric
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ApplicationELB \
+  --metric-name UnHealthyHostCount \
+  --dimensions Name=TargetGroup,Value=<tg-arn-suffix> Name=LoadBalancer,Value=<lb-arn-suffix> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Maximum
+```
+
+**Likely causes:**
+- Health check path returns non-200 status
+- Security group blocks health check port
+- Application not listening on expected port
+- Health check timeout too short
+
 ## Standard Diagnosis Output Format
 
 When completing a diagnosis, report:
