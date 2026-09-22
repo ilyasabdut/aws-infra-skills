@@ -60,6 +60,8 @@ The hook blocks:
 - IaC tools: `terraform`, `pulumi`, `eksctl`, `helm`
 - Shell indirection: `bash -c`, `sh -c`, `eval` with dangerous commands
 - Command/process substitution: `$(...)`, `` `...` ``, `<(...)` with dangerous commands
+- Here-string/heredoc: `<<<`, `<<EOF` with dangerous commands
+- Chained commands: `;`, `&&`, `||`, newlines followed by dangerous commands
 - Pipe/xargs bypass: `| kubectl`, `xargs aws` with mutation verbs
 - SDK bypass: `python boto3`, `node @aws-sdk`, `curl amazonaws`
 - Credential inspection: `env`, `printenv`, `declare -x`, `export -p`
