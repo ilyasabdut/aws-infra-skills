@@ -1,0 +1,146 @@
+# Read-Only Infrastructure Agent Hook Configuration
+# Blocks dangerous kubectl/AWS operations before execution
+
+name: readonly-infra
+description: Blocks mutating kubectl and AWS operations for read-only agent access
+enabled: true
+
+# kubectl command filtering
+kubectl:
+  # Allowlist approach - only these subcommands are permitted
+  allowed_subcommands:
+    - get
+    - describe
+    - logs
+    - top
+    - api-resources
+    - api-versions
+    - cluster-info
+    - version
+    - config view        # read-only config inspection
+    - config get-contexts
+    - config current-context
+
+  # Explicitly blocked (for documentation - anything not in allowed is blocked)
+  blocked_subcommands:
+    - apply
+    - create
+    - delete
+    - patch
+    - edit
+    - replace
+    - scale
+    - rollout
+    - exec
+    - cp
+    - port-forward
+    - run
+    - expose
+    - set
+    - label
+    - annotate
+    - taint
+    - cordon
+    - uncordon
+    - drain
+    - attach
+    - debug
+    - auth can-i  # could probe write permissions
+
+# AWS CLI command filtering
+aws:
+  # Blocklist approach - block known dangerous patterns
+  blocked_patterns:
+    # Mutation verbs
+    - "aws .* delete-"
+    - "aws .* terminate-"
+    - "aws .* modify-"
+    - "aws .* update-"
+    - "aws .* create-"
+    - "aws .* put-"
+    - "aws .* remove-"
+    - "aws .* deregister-"
+    - "aws .* attach-"
+    - "aws .* detach-"
+    - "aws .* enable-"
+    - "aws .* disable-"
+    - "aws .* start-"
+    - "aws .* stop-"
+    - "aws .* reboot-"
+    - "aws .* run-"
+    
+  # Entire services blocked
+  blocked_services:
+    - iam           # All IAM operations blocked
+    - sts assume-role  # Prevent privilege escalation
+    - organizations
+    - cloudformation
+    - cloudtrail update
+    - cloudtrail delete
+    - cloudtrail stop
+
+  # S3 specific rules
+  s3:
+    blocked_operations:
+      - "aws s3 rm"
+      - "aws s3 mv"
+      - "aws s3 cp .* s3://"     # upload blocked
+      - "aws s3 sync .* s3://"   # upload sync blocked
+      - "aws s3api delete-"
+      - "aws s3api put-"
+    allowed_operations:
+      - "aws s3 ls"
+      - "aws s3 cp s3://.* -"    # download to stdout OK
+      - "aws s3api list-"
+      - "aws s3api get-"
+      - "aws s3api head-"
+
+# Credential protection
+credential_protection:
+  blocked_commands:
+    - "^env$"
+    - "^printenv$"
+    - "^export$"
+    - "set$"
+    - "/proc/.*/environ"
+    - "cat.*AWS_"
+    - "echo.*AWS_SECRET"
+    - "echo.*AWS_SESSION_TOKEN"
+
+# Bypass prevention
+bypass_prevention:
+  blocked_patterns:
+    # Python SDK
+    - "python.*boto3"
+    - "python.*botocore"
+    - "python3.*boto3"
+    - "python -c.*import boto"
+    # Direct API calls
+    - "curl.*\\.amazonaws\\.com"
+    - "wget.*\\.amazonaws\\.com"
+    - "curl.*eks\\."
+    - "curl.*ec2\\."
+    # Node SDK
+    - "node.*aws-sdk"
+    - "node -e.*require.*aws"
+
+# Block messages - helpful alternatives
+block_messages:
+  kubectl_write: |
+    Blocked: kubectl {subcommand} is a write operation.
+    For investigation, use: kubectl describe, kubectl get, kubectl logs
+  kubectl_exec: |
+    Blocked: kubectl exec allows arbitrary code execution in containers.
+    To see container output, use: kubectl logs <pod> -n <namespace>
+  aws_mutation: |
+    Blocked: aws {service} {operation} is a mutating operation.
+    Read-only operations like describe-*, list-*, get-* are allowed.
+  aws_iam: |
+    Blocked: IAM operations are not permitted.
+    This agent has read-only infrastructure access.
+  credential_inspection: |
+    Blocked: Environment inspection could expose credentials.
+    AWS credentials are configured but not directly accessible.
+  bypass_attempt: |
+    Blocked: Direct SDK/API access is not permitted.
+    Use the aws CLI for allowed read operations.

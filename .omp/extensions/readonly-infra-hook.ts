@@ -1,0 +1,292 @@
+/**
+ * Read-Only Infrastructure Hook
+ *
+ * Blocks dangerous kubectl and AWS CLI operations for AI agents.
+ * Ensures agents can only perform read-only infrastructure investigation.
+ *
+ * Hooks `bash` tool calls and blocks:
+ * - kubectl write operations (apply, delete, exec, scale, etc.)
+ * - AWS mutation operations (delete-*, create-*, modify-*, etc.)
+ * - IAM operations entirely
+ * - Credential extraction attempts (env, printenv, proc environ)
+ * - SDK bypass attempts (python boto3, curl to AWS APIs)
+ */
+
+import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
+
+// kubectl subcommands that are allowed (read-only)
+const KUBECTL_ALLOWED: Record<string, true> = {
+	get: true,
+	describe: true,
+	logs: true,
+	top: true,
+	"api-resources": true,
+	"api-versions": true,
+	"cluster-info": true,
+	version: true,
+	config: true,
+	rollout: true, // handled specially - only "status" allowed
+};
+
+// kubectl config subcommands that are allowed
+const KUBECTL_CONFIG_ALLOWED: Record<string, true> = {
+	view: true,
+	"get-contexts": true,
+	"current-context": true,
+	"get-clusters": true,
+};
+
+// AWS services that are completely blocked
+const AWS_BLOCKED_SERVICES: Record<string, true> = {
+	iam: true,
+	organizations: true,
+};
+
+// AWS mutation verb patterns
+const AWS_MUTATION_VERBS = [
+	"delete-",
+	"terminate-",
+	"modify-",
+	"update-",
+	"create-",
+	"put-",
+	"remove-",
+	"deregister-",
+	"attach-",
+	"detach-",
+	"enable-",
+	"disable-",
+	"start-",
+	"stop-",
+	"reboot-",
+	"run-instances",
+	"run-task",
+];
+
+// kubectl write subcommands (for specific error messages)
+const KUBECTL_WRITE_OPS: Record<string, true> = {
+	apply: true,
+	create: true,
+	delete: true,
+	patch: true,
+	edit: true,
+	replace: true,
+};
+
+const KUBECTL_NODE_OPS: Record<string, true> = {
+	drain: true,
+	cordon: true,
+	uncordon: true,
+	taint: true,
+};
+
+interface BlockResult {
+	block: true;
+	reason: string;
+}
+
+export default function readonlyInfraHook(pi: ExtensionAPI): void {
+	pi.on("tool_call", async (event) => {
+		// Only intercept bash tool calls
+		if (event.toolName !== "bash") return;
+
+		const command = String((event.input as { command?: unknown }).command ?? "");
+		if (!command.trim()) return;
+
+		// ========== KUBECTL CHECKS ==========
+		if (/kubectl\s/.test(command) || /^kubectl/.test(command)) {
+			const match = command.match(/kubectl\s+([a-z-]+)/);
+			if (match) {
+				const subcommand = match[1];
+
+				// Special handling for config
+				if (subcommand === "config") {
+					const configMatch = command.match(/kubectl\s+config\s+([a-z-]+)/);
+					if (configMatch && !KUBECTL_CONFIG_ALLOWED[configMatch[1]]) {
+						return {
+							block: true,
+							reason: `Blocked: kubectl config ${configMatch[1]} is not allowed.\nUse: kubectl config view, get-contexts, current-context`,
+						} satisfies BlockResult;
+					}
+				}
+				// Special handling for rollout - only status allowed
+				else if (subcommand === "rollout") {
+					if (!/rollout\s+status/.test(command)) {
+						return {
+							block: true,
+							reason: `Blocked: kubectl rollout (except status) modifies workloads.\nUse: kubectl rollout status deployment/<name>`,
+						} satisfies BlockResult;
+					}
+				}
+				// Check allowlist
+				else if (!KUBECTL_ALLOWED[subcommand]) {
+					const alternatives = "kubectl get, kubectl describe, kubectl logs";
+
+					if (subcommand === "exec") {
+						return {
+							block: true,
+							reason: `Blocked: kubectl exec allows arbitrary code execution in containers.\nTo see container output, use: kubectl logs <pod> -n <namespace>`,
+						} satisfies BlockResult;
+					}
+
+					if (KUBECTL_WRITE_OPS[subcommand]) {
+						return {
+							block: true,
+							reason: `Blocked: kubectl ${subcommand} is a write operation.\nFor investigation, use: ${alternatives}`,
+						} satisfies BlockResult;
+					}
+
+					if (subcommand === "scale") {
+						return {
+							block: true,
+							reason: `Blocked: kubectl scale modifies replica count.\nTo check current state: kubectl describe deployment <name>`,
+						} satisfies BlockResult;
+					}
+
+					if (KUBECTL_NODE_OPS[subcommand]) {
+						return {
+							block: true,
+							reason: `Blocked: kubectl ${subcommand} modifies node state.\nTo investigate: kubectl describe node <name>`,
+						} satisfies BlockResult;
+					}
+
+					return {
+						block: true,
+						reason: `Blocked: kubectl ${subcommand} is not in the allowed list.\nAllowed: get, describe, logs, top, version, cluster-info, api-resources`,
+					} satisfies BlockResult;
+				}
+			}
+		}
+
+		// ========== AWS CLI CHECKS ==========
+		if (/aws\s/.test(command) || /^aws/.test(command)) {
+			const serviceMatch = command.match(/aws\s+([a-z0-9-]+)/);
+			if (serviceMatch) {
+				const service = serviceMatch[1];
+
+				// Check blocked services
+				if (AWS_BLOCKED_SERVICES[service]) {
+					return {
+						block: true,
+						reason: `Blocked: aws ${service} operations are not permitted.\nThis agent has read-only infrastructure access.`,
+					} satisfies BlockResult;
+				}
+			}
+
+			// Check STS assume-role (privilege escalation)
+			if (/aws\s+sts\s+assume-role/.test(command)) {
+				return {
+					block: true,
+					reason: `Blocked: aws sts assume-role is not permitted (prevents privilege escalation).`,
+				} satisfies BlockResult;
+			}
+
+			// S3 write operations
+			if (/aws\s+s3\s+rm\s/.test(command)) {
+				return {
+					block: true,
+					reason: `Blocked: aws s3 rm is not permitted.\nRead-only allowed: aws s3 ls, aws s3 cp s3://... -`,
+				} satisfies BlockResult;
+			}
+
+			if (/aws\s+s3\s+mv\s/.test(command)) {
+				return {
+					block: true,
+					reason: `Blocked: aws s3 mv is not permitted.`,
+				} satisfies BlockResult;
+			}
+
+			// Block upload to S3 (cp TO s3://)
+			if (/aws\s+s3\s+cp\s/.test(command)) {
+				const argsMatch = command.match(/aws\s+s3\s+cp\s+(.+)/);
+				if (argsMatch) {
+					const args = argsMatch[1];
+					// If first arg is NOT s3:// and s3:// appears later, it's an upload
+					if (!/^s3:\/\//.test(args.trim()) && /\s+s3:\/\//.test(args)) {
+						return {
+							block: true,
+							reason: `Blocked: aws s3 cp upload is not permitted.\nDownload allowed: aws s3 cp s3://bucket/key -`,
+						} satisfies BlockResult;
+					}
+				}
+			}
+
+			if (/aws\s+s3\s+sync\s/.test(command) && !/aws\s+s3\s+sync\s+s3:\/\//.test(command)) {
+				return {
+					block: true,
+					reason: `Blocked: aws s3 sync upload is not permitted.`,
+				} satisfies BlockResult;
+			}
+
+			// s3api write operations
+			if (/aws\s+s3api\s+(delete-|put-)/.test(command)) {
+				return {
+					block: true,
+					reason: `Blocked: aws s3api write operations are not permitted.`,
+				} satisfies BlockResult;
+			}
+
+			// Check mutation verbs
+			for (const verb of AWS_MUTATION_VERBS) {
+				const pattern = new RegExp(`aws\\s+[a-z0-9-]+\\s+${verb.replace("-", "\\-")}`);
+				if (pattern.test(command)) {
+					const opMatch = command.match(/aws\s+([a-z0-9-]+)\s+([a-z0-9-]+)/);
+					if (opMatch) {
+						return {
+							block: true,
+							reason: `Blocked: aws ${opMatch[1]} ${opMatch[2]} is a mutating operation.\nRead-only operations like describe-*, list-*, get-* are allowed.`,
+						} satisfies BlockResult;
+					}
+				}
+			}
+		}
+
+		// ========== CREDENTIAL PROTECTION ==========
+		const trimmed = command.trim();
+		if (/^env$/.test(trimmed) || /^printenv/.test(trimmed) || /^export$/.test(trimmed)) {
+			return {
+				block: true,
+				reason: `Blocked: Environment inspection is not permitted (protects credentials).`,
+			} satisfies BlockResult;
+		}
+
+		if (/\/proc\/\d+\/environ/.test(command) || /\/proc\/self\/environ/.test(command)) {
+			return {
+				block: true,
+				reason: `Blocked: Process environment inspection is not permitted.`,
+			} satisfies BlockResult;
+		}
+
+		if (/echo.*\$AWS_SECRET/.test(command) || /echo.*\$\{AWS_SECRET/.test(command)) {
+			return {
+				block: true,
+				reason: `Blocked: Credential inspection is not permitted.`,
+			} satisfies BlockResult;
+		}
+
+		if (/echo.*\$AWS_SESSION_TOKEN/.test(command) || /echo.*\$\{AWS_SESSION_TOKEN/.test(command)) {
+			return {
+				block: true,
+				reason: `Blocked: Credential inspection is not permitted.`,
+			} satisfies BlockResult;
+		}
+
+		// ========== BYPASS PREVENTION ==========
+		if (/python[3]?\s+.*boto3/i.test(command) || /python[3]?\s+-c.*import\s+boto/i.test(command)) {
+			return {
+				block: true,
+				reason: `Blocked: Direct SDK access is not permitted.\nUse aws CLI for allowed read operations.`,
+			} satisfies BlockResult;
+		}
+
+		if (/curl.*\.amazonaws\.com/.test(command) || /wget.*\.amazonaws\.com/.test(command)) {
+			return {
+				block: true,
+				reason: `Blocked: Direct AWS API access is not permitted.\nUse aws CLI for allowed read operations.`,
+			} satisfies BlockResult;
+		}
+
+		// Command allowed
+		return;
+	});
+}
