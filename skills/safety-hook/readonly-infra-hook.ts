@@ -98,8 +98,7 @@ const AWS_MUTATION_VERBS = [
 	"publish",
 	"send-command",
 	// Compute
-	"run-instances",
-	"run-task",
+	"run-",
 	// Execution
 	"execute-",
 	// Configuration
