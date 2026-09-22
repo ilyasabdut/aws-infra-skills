@@ -72,5 +72,25 @@ test_block "python boto3" python -c "import boto3"
 test_block "curl amazonaws" curl https://eks.amazonaws.com
 
 echo ""
+echo "--- IaC tools tests ---"
+test_block "terraform apply" terraform apply
+test_block "helm install" helm install nginx
+test_block "eksctl create" eksctl create cluster
+test_block "pulumi up" pulumi up
+
+echo ""
+echo "--- Shell indirection tests ---"
+test_block "bash -c kubectl delete" 'bash -c "kubectl delete pod test"'
+test_block "sh -c aws iam" 'sh -c "aws iam list-users"'
+test_block "eval kubectl delete" 'eval "kubectl delete pod test"'
+test_block "eval aws iam" 'eval "aws iam list-users"'
+
+echo ""
+echo "--- Pipe/xargs bypass tests ---"
+test_block "xargs aws delete" 'echo x | xargs aws eks delete-cluster'
+test_block "pipe kubectl delete" 'cat pods.txt | kubectl delete -f -'
+test_block "node aws-sdk" 'node -e "require(\"@aws-sdk/client-ec2\")"'
+
+echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="
 [ $FAIL -eq 0 ]
