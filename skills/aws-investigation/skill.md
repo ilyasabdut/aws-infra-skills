@@ -1,6 +1,6 @@
 ---
 name: AWS Investigation
-description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, ACM, Cognito, OpenSearch, Redshift, Athena, and CloudTrail.
+description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, ACM, Cognito, OpenSearch, Redshift, Athena, CloudTrail, EFS, Service Quotas, and Cost Explorer.
 ---
 
 # AWS Investigation Skill
@@ -42,6 +42,9 @@ Use this skill when investigating:
 - Redshift clusters and query logs
 - Athena workgroups and query executions
 - CloudTrail API activity and audit logs
+- EFS file systems and mount targets
+- Service Quotas and usage limits
+- Cost Explorer spending and anomalies
 
 ## Quick Reference
 
@@ -1185,6 +1188,108 @@ aws cloudtrail get-event-selectors --trail-name <trail-name>
 ### Insight selectors (anomaly detection)
 ```bash
 aws cloudtrail get-insight-selectors --trail-name <trail-name>
+```
+
+## EFS Investigation
+
+### List file systems
+```bash
+aws efs describe-file-systems
+aws efs describe-file-systems --file-system-id <fs-id>
+```
+
+### Mount targets
+```bash
+aws efs describe-mount-targets --file-system-id <fs-id>
+```
+
+### Access points
+```bash
+aws efs describe-access-points --file-system-id <fs-id>
+```
+
+### EFS metrics
+```bash
+# Burst credit balance
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/EFS \
+  --metric-name BurstCreditBalance \
+  --dimensions Name=FileSystemId,Value=<fs-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Average
+
+# Client connections
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/EFS \
+  --metric-name ClientConnections \
+  --dimensions Name=FileSystemId,Value=<fs-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+```
+
+## Service Quotas Investigation
+
+### List service quotas
+```bash
+# List all services
+aws service-quotas list-services
+
+# List quotas for a service
+aws service-quotas list-service-quotas --service-code ec2
+aws service-quotas list-service-quotas --service-code lambda
+```
+
+### Get specific quota
+```bash
+aws service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A
+```
+
+### Check quota usage
+```bash
+# EC2 running instances quota
+aws service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A \
+  --query '{QuotaName:QuotaName,Value:Value,UsageMetric:UsageMetric}'
+```
+
+### Quota increase requests
+```bash
+aws service-quotas list-requested-service-quota-change-history-by-quota \
+  --service-code ec2 --quota-code L-1216C47A
+```
+
+## Cost Explorer Investigation
+
+### Get cost and usage
+```bash
+# Last 30 days cost by service
+aws ce get-cost-and-usage \
+  --time-period Start=$(date -u -v-30d +%Y-%m-%d),End=$(date -u +%Y-%m-%d) \
+  --granularity MONTHLY \
+  --metrics "UnblendedCost" \
+  --group-by Type=DIMENSION,Key=SERVICE
+
+# Daily cost trend
+aws ce get-cost-and-usage \
+  --time-period Start=$(date -u -v-7d +%Y-%m-%d),End=$(date -u +%Y-%m-%d) \
+  --granularity DAILY \
+  --metrics "UnblendedCost"
+```
+
+### Cost anomalies
+```bash
+# Get anomalies in last 30 days
+aws ce get-anomalies \
+  --date-interval StartDate=$(date -u -v-30d +%Y-%m-%d),EndDate=$(date -u +%Y-%m-%d)
+```
+
+### Cost forecast
+```bash
+aws ce get-cost-forecast \
+  --time-period Start=$(date -u +%Y-%m-%d),End=$(date -u -v+30d +%Y-%m-%d) \
+  --metric UNBLENDED_COST \
+  --granularity MONTHLY
 ```
 
 ---
