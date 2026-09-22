@@ -115,6 +115,7 @@ test_block "&& kubectl delete" 'kubectl get pods && kubectl delete pod test'
 test_block "|| kubectl delete" 'true || kubectl delete pod test'
 test_block "semicolon aws iam" 'aws s3 ls; aws iam list-users'
 test_block "semicolon aws terminate" 'aws s3 ls; aws ec2 terminate-instances --instance-ids i-123'
+test_block "newline kubectl delete" $'kubectl get pods\nkubectl delete pod test'
 
 echo ""
 echo "--- Environment inspection tests ---"

@@ -38,14 +38,14 @@ fi
 # Scan for dangerous commands after ; && || before allowlist short-circuits
 # ============================================================================
 
-# Block dangerous kubectl after chain operators
-if [[ "$CMD" =~ [';''|''&'][[:space:]]*(kubectl[[:space:]]+(delete|apply|exec|scale|edit|patch|drain|cordon|create|run)) ]]; then
+# Block dangerous kubectl after chain operators (including newlines)
+if [[ "$CMD" =~ ($'\n'|[';''|''&'])[[:space:]]*(kubectl[[:space:]]+(delete|apply|exec|scale|edit|patch|drain|cordon|create|run)) ]]; then
     block "Chained kubectl mutation command detected. Run commands separately."
 fi
 
-# Block dangerous aws after chain operators
-if [[ "$CMD" =~ [';''|''&'][[:space:]]*(aws[[:space:]]+iam) ]] || \
-   [[ "$CMD" =~ [';''|''&'][[:space:]]*(aws[[:space:]]+[a-z0-9-]+[[:space:]]+(delete-|terminate-|create-|modify-)) ]]; then
+# Block dangerous aws after chain operators (including newlines)
+if [[ "$CMD" =~ ($'\n'|[';''|''&'])[[:space:]]*(aws[[:space:]]+iam) ]] || \
+   [[ "$CMD" =~ ($'\n'|[';''|''&'])[[:space:]]*(aws[[:space:]]+[a-z0-9-]+[[:space:]]+(delete-|terminate-|create-|modify-)) ]]; then
     block "Chained AWS mutation command detected. Run commands separately."
 fi
 
