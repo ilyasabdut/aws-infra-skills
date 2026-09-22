@@ -98,6 +98,10 @@ The safety hook is optimized for minimal latency (~5ms per command check). Optim
 - `import kubernetes` / kubernetes client API instantiation
 - `os.environ["AWS_SECRET_ACCESS_KEY"]` access
 - `subprocess.run(["kubectl", ...])` / `subprocess.run(["aws", ...])`
+- `@aws-sdk/client-*` imports in JavaScript eval
+- `@kubernetes/client-node` imports and API instantiation
+- `process.env.AWS_SECRET_ACCESS_KEY` access
+- `child_process.exec("kubectl ...")` / `Bun.spawn(["aws", ...])`
 
 ## Example Usage
 
