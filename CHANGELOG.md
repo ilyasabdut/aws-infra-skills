@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-09-22
+
+### Added
+- **aws-investigation skill**: CloudTrail investigation (trails, event lookup, audit logs)
+
 ## [1.8.0] - 2026-09-22
 
 ### Added
@@ -211,6 +216,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.8.1]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.6.1...v1.7.0
 [1.6.1]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.6.0...v1.6.1
