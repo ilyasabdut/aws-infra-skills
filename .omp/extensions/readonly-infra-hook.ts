@@ -110,12 +110,28 @@ const AWS_MUTATION_VERBS = [
 	"failover-",
 	"promote-",
 	"revert-",
+	"switchover-",
 	// Movement
 	"move-",
 	// Batch mutations
 	"batch-write-",
 	"batch-delete-",
 	"batch-put-",
+	// Replacement
+	"replace-",
+	// Provisioning
+	"request-",
+	"purchase-",
+	// Assignment
+	"assign-",
+	"unassign-",
+	// Submission
+	"submit-",
+	"apply-",
+	// Packaging
+	"bundle-",
+	// Confirmation
+	"confirm-",
 	// Other
 	"add-",
 	"write-",
