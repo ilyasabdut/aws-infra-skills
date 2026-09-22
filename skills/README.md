@@ -8,7 +8,7 @@ Skills for AI agents to investigate AWS and Kubernetes infrastructure without th
 |-------|-------------|
 | **k8s-investigation** | kubectl patterns for pods, deployments, nodes, events, logs |
 | **aws-investigation** | AWS CLI patterns for EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, ACM, Cognito, OpenSearch, Redshift, Athena, CloudTrail, EFS, Service Quotas, Cost Explorer, Glue, EMR, Backup |
-| **diagnostic-workflows** | Step-by-step procedures for pod crashes, RDS, Lambda, SQS, ALB, EC2, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas |
+| **diagnostic-workflows** | Step-by-step procedures for pod crashes, RDS, Lambda, SQS, ALB, EC2, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas, Redshift, Athena, Glue, EMR, Backup, Cost Explorer |
 | **safety-hook** | Documentation + bash script to block dangerous operations |
 
 ## Installation
