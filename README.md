@@ -102,20 +102,21 @@ The safety hook is optimized for minimal latency (~5ms per command check). Optim
   - Approval: `accept-`, `reject-`
   - Tagging: `tag-resource`, `untag-resource`
   - Messaging: `send-`, `invoke`, `publish`, `send-command`
-  - Compute: `run-instances`, `run-task`
+  - Compute: `run-`
   - Execution: `execute-`
   - Configuration: `set-`, `reset-`
   - Recovery: `restore-`, `failover-`, `promote-`, `revert-`, `switchover-`
   - Movement: `move-`, `migrate-`
   - Batch: `batch-write-`, `batch-delete-`, `batch-put-`
   - Replacement: `replace-`
-  - Provisioning: `request-`, `purchase-`
+  - Provisioning: `request-`, `purchase-`, `provision-`, `deprovision-`
   - Assignment: `assign-`, `unassign-`
   - Submission: `submit-`, `apply-`
   - Packaging: `bundle-`
   - Confirmation: `confirm-`
   - Export/Clone: `export-`, `clone-`
   - Locking: `lock-`, `unlock-`
+  - BYOIP: `advertise-`, `withdraw-`
   - Other: `add-`, `write-`
 - `aws s3 rm`, `aws s3 cp ... s3://` (upload)
 - `env`, `printenv` (credential protection)

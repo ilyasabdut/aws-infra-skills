@@ -104,18 +104,21 @@ Read operations are generally allowed:
 | **Approval** | `accept-`, `reject-` | Approval workflows |
 | **Tagging** | `tag-resource`, `untag-resource` | Resource tagging |
 | **Messaging** | `send-`, `invoke`, `publish`, `send-command` | Message/execution |
-| **Compute** | `run-instances`, `run-task` | Instance/task launch |
+| **Compute** | `run-` | Instance/task launch |
 | **Execution** | `execute-` | Code/SQL execution |
 | **Configuration** | `set-`, `reset-` | Configuration changes |
 | **Recovery** | `restore-`, `failover-`, `promote-`, `revert-`, `switchover-` | DR operations |
-| **Movement** | `move-` | Resource movement |
+| **Movement** | `move-`, `migrate-` | Resource movement |
 | **Batch** | `batch-write-`, `batch-delete-`, `batch-put-` | DynamoDB batch mutations |
 | **Replacement** | `replace-` | Route/ACL replacement |
-| **Provisioning** | `request-`, `purchase-` | Spot/reserved instances |
+| **Provisioning** | `request-`, `purchase-`, `provision-`, `deprovision-` | Spot/reserved/IPAM |
 | **Assignment** | `assign-`, `unassign-` | IP address assignment |
 | **Submission** | `submit-`, `apply-` | State/maintenance changes |
 | **Packaging** | `bundle-` | Instance bundling |
 | **Confirmation** | `confirm-` | Product confirmation |
+| **Export/Clone** | `export-`, `clone-` | Image/snapshot export, RDS cloning |
+| **Locking** | `lock-`, `unlock-` | Snapshot locking |
+| **BYOIP** | `advertise-`, `withdraw-` | BYOIP advertisement |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
