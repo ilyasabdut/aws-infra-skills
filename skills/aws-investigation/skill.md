@@ -1451,6 +1451,181 @@ aws backup list-backup-jobs --by-state FAILED
 aws backup list-protected-resources
 ```
 
+## Security Hub Investigation
+
+### Get findings
+```bash
+# Active findings
+aws securityhub get-findings --filters '{"RecordState":[{"Value":"ACTIVE","Comparison":"EQUALS"}]}' \
+  --max-results 20 --query 'Findings[].{Title:Title,Severity:Severity.Label,Resource:Resources[0].Id}'
+
+# Critical/High severity
+aws securityhub get-findings --filters '{"SeverityLabel":[{"Value":"CRITICAL","Comparison":"EQUALS"},{"Value":"HIGH","Comparison":"EQUALS"}]}' \
+  --max-results 20
+
+# By resource type
+aws securityhub get-findings --filters '{"ResourceType":[{"Value":"AwsEc2Instance","Comparison":"EQUALS"}]}' \
+  --max-results 20
+
+# By product (e.g., GuardDuty, Inspector)
+aws securityhub get-findings --filters '{"ProductName":[{"Value":"GuardDuty","Comparison":"EQUALS"}]}' \
+  --max-results 20
+```
+
+### Standards and controls
+```bash
+# Enabled standards
+aws securityhub get-enabled-standards
+
+# Control status
+aws securityhub describe-standards-controls --standards-subscription-arn <subscription-arn> \
+  --query 'Controls[?ControlStatus==`FAILED`].{Id:ControlId,Title:Title,Status:ControlStatus}'
+```
+
+### Insights
+```bash
+aws securityhub get-insights
+aws securityhub get-insight-results --insight-arn <insight-arn>
+```
+
+## GuardDuty Investigation
+
+### Detectors and findings
+```bash
+# List detectors
+aws guardduty list-detectors
+
+# Get detector info
+aws guardduty get-detector --detector-id <detector-id>
+
+# List findings
+aws guardduty list-findings --detector-id <detector-id> --max-results 20
+
+# Get finding details
+aws guardduty get-findings --detector-id <detector-id> --finding-ids <finding-id> \
+  --query 'Findings[].{Type:Type,Severity:Severity,Resource:Resource,Description:Description}'
+
+# High severity findings
+aws guardduty list-findings --detector-id <detector-id> \
+  --finding-criteria '{"Criterion":{"severity":{"Gte":7}}}'
+```
+
+### Threat intel
+```bash
+aws guardduty list-threat-intel-sets --detector-id <detector-id>
+aws guardduty list-ip-sets --detector-id <detector-id>
+```
+
+## Inspector Investigation
+
+### Findings
+```bash
+# List findings
+aws inspector2 list-findings --max-results 20 \
+  --query 'findings[].{Title:title,Severity:severity,Type:type,Resource:resources[0].id}'
+
+# Critical/High findings
+aws inspector2 list-findings --filter-criteria '{"severity":[{"comparison":"EQUALS","value":"CRITICAL"},{"comparison":"EQUALS","value":"HIGH"}]}'
+
+# By resource type
+aws inspector2 list-findings --filter-criteria '{"resourceType":[{"comparison":"EQUALS","value":"AWS_ECR_CONTAINER_IMAGE"}]}'
+
+# By finding type (NETWORK_REACHABILITY, PACKAGE_VULNERABILITY, CODE_VULNERABILITY)
+aws inspector2 list-findings --filter-criteria '{"findingType":[{"comparison":"EQUALS","value":"PACKAGE_VULNERABILITY"}]}'
+```
+
+### Coverage
+```bash
+# Account coverage
+aws inspector2 list-coverage --max-results 20 \
+  --query 'coveredResources[].{Resource:resourceId,Type:resourceType,Status:scanStatus.statusCode}'
+
+# Coverage statistics
+aws inspector2 list-coverage-statistics
+```
+
+## Config Investigation
+
+### Configuration items
+```bash
+# Resource configuration
+aws configservice get-resource-config-history \
+  --resource-type AWS::EC2::Instance \
+  --resource-id <instance-id> \
+  --limit 5
+
+# Current configuration
+aws configservice batch-get-resource-config \
+  --resource-keys resourceType=AWS::EC2::Instance,resourceId=<instance-id>
+```
+
+### Compliance
+```bash
+# Compliance by rule
+aws configservice describe-compliance-by-config-rule \
+  --query 'ComplianceByConfigRules[?Compliance.ComplianceType==`NON_COMPLIANT`].{Rule:ConfigRuleName,Status:Compliance.ComplianceType}'
+
+# Compliance by resource
+aws configservice describe-compliance-by-resource \
+  --compliance-types NON_COMPLIANT
+
+# Rule evaluation status
+aws configservice describe-config-rule-evaluation-status \
+  --query 'ConfigRulesEvaluationStatus[].{Rule:ConfigRuleName,LastRun:LastSuccessfulEvaluationTime}'
+```
+
+### Aggregated compliance
+```bash
+# If using aggregator
+aws configservice describe-configuration-aggregators
+
+aws configservice get-aggregate-compliance-details-by-config-rule \
+  --configuration-aggregator-name <aggregator-name> \
+  --config-rule-name <rule-name> \
+  --compliance-type NON_COMPLIANT
+```
+
+## X-Ray Investigation
+
+### Traces
+```bash
+# Get trace summaries
+aws xray get-trace-summaries \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s)
+
+# Filter by annotation
+aws xray get-trace-summaries \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s) \
+  --filter-expression 'annotation.user = "test"'
+
+# Error traces
+aws xray get-trace-summaries \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s) \
+  --filter-expression 'error = true'
+
+# Slow traces (> 5s)
+aws xray get-trace-summaries \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s) \
+  --filter-expression 'responsetime > 5'
+```
+
+### Service graph
+```bash
+aws xray get-service-graph \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s)
+```
+
+### Groups and sampling
+```bash
+aws xray get-groups
+aws xray get-sampling-rules
+```
+
 ---
 
 **Important**: This skill only covers read operations. Mutating operations (create, delete, modify, update) should be blocked by a safety hook in production agent environments.
