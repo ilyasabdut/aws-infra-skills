@@ -72,8 +72,19 @@ const AWS_MUTATION_VERBS = [
 	"stop-",
 	"reboot-",
 	"add-",
+	"register-",
+	"associate-",
+	"disassociate-",
+	"authorize-",
+	"revoke-",
+	"import-",
+	"copy-",
+	"send-",
+	"invoke",
+	"publish",
 	"run-instances",
 	"run-task",
+	"send-command",
 ];
 
 // kubectl write subcommands (for specific error messages)

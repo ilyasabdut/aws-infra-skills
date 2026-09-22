@@ -141,7 +141,11 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
     fi
     
     # Block mutation verbs across all services - single combined regex (no loop)
-    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|run-instances|run-task) ]]; then
+    # Patterns: delete-, terminate-, modify-, update-, create-, put-, remove-, deregister-,
+    #           attach-, detach-, enable-, disable-, start-, stop-, reboot-, add-,
+    #           register-, associate-, disassociate-, authorize-, revoke-, import-,
+    #           copy-, send-, invoke, publish, run-instances, run-task, send-command
+    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-instances|run-task|send-command) ]]; then
         block "aws $SERVICE mutation operation is not permitted. Read-only: describe-*, list-*, get-*"
     fi
 fi
