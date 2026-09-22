@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.2] - 2026-09-23
+
+### Fixed
+- **safety-hook**: Block `add-*` mutation verbs (e.g., `aws emr add-steps`, `aws emr add-tags`) - was incorrectly allowed
+
 ## [1.23.1] - 2026-09-23
 
 ### Fixed
@@ -329,6 +334,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.23.2]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.1...v1.23.2
 [1.23.1]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.0...v1.23.1
 [1.23.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.22.0...v1.23.0
 [1.22.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.21.0...v1.22.0
