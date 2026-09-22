@@ -231,6 +231,22 @@ export default function readonlyInfraHook(pi: ExtensionAPI): void {
 		const command = String((event.input as { command?: unknown }).command ?? "");
 		if (!command.trim()) return;
 
+		// ========== CHAINED COMMAND DETECTION ==========
+		// Detect dangerous commands after ; && || before allowlist short-circuits
+		if (/[\n;&|]\s*(kubectl\s+(delete|apply|exec|scale|edit|patch|drain|cordon|create|run))/.test(command)) {
+			return {
+				block: true,
+				reason: `Blocked: Chained kubectl mutation command detected.\nRun commands separately.`,
+			} satisfies BlockResult;
+		}
+		if (/[\n;&|]\s*(aws\s+iam)/.test(command) ||
+			/[\n;&|]\s*(aws\s+[a-z0-9-]+\s+(delete-|terminate-|create-|modify-))/.test(command)) {
+			return {
+				block: true,
+				reason: `Blocked: Chained AWS mutation command detected.\nRun commands separately.`,
+			} satisfies BlockResult;
+		}
+
 		// ========== KUBECTL CHECKS ==========
 		if (/kubectl\s/.test(command) || /^kubectl/.test(command)) {
 			const match = command.match(/kubectl\s+([a-z-]+)/);
@@ -364,6 +380,11 @@ export default function readonlyInfraHook(pi: ExtensionAPI): void {
 				} satisfies BlockResult;
 			}
 
+			// Allow CloudWatch Logs Insights query operations (read-only despite start- prefix)
+			if (/aws\s+logs\s+(start-query|stop-query|get-query-results)/.test(command)) {
+				return; // Allow
+			}
+
 			// Check mutation verbs
 			for (const verb of AWS_MUTATION_VERBS) {
 				const pattern = new RegExp(`aws\\s+[a-z0-9-]+\\s+${verb.replace("-", "\\-")}`);
@@ -470,7 +491,7 @@ export default function readonlyInfraHook(pi: ExtensionAPI): void {
 		}
 
 		// ========== COMMAND SUBSTITUTION BLOCKING ==========
-		if (/\$\(/.test(command) || /`/.test(command) || /<\(/.test(command)) {
+		if (/\$\(/.test(command) || /`/.test(command) || /<\(/.test(command) || /<<</.test(command)) {
 			if (/kubectl\s+(delete|apply|exec|scale)/.test(command) ||
 				/aws\s+iam/.test(command) ||
 				/(terminate-|delete-cluster|create-|modify-)/.test(command)) {

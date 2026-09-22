@@ -135,6 +135,11 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
         block "aws s3api write operations are not permitted."
     fi
     
+    # Allow CloudWatch Logs Insights query operations (read-only despite start- prefix)
+    if [[ "$SERVICE" == "logs" && "$CMD" =~ [[:space:]](start-query|stop-query|get-query-results) ]]; then
+        exit 0
+    fi
+    
     # Block mutation verbs across all services - single combined regex (no loop)
     if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|run-instances|run-task) ]]; then
         block "aws $SERVICE mutation operation is not permitted. Read-only: describe-*, list-*, get-*"
