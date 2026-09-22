@@ -97,6 +97,13 @@ The safety hook is optimized for minimal latency (~5ms per command check). Optim
 - `aws s3 rm`, `aws s3 cp ... s3://` (upload)
 - `env`, `printenv` (credential protection)
 
+### Blocked (IaC & shell bypass)
+- `terraform`, `pulumi`, `eksctl`, `helm` (all operations)
+- `bash -c` / `sh -c` with dangerous kubectl/aws commands
+- `eval` with dangerous kubectl/aws commands
+- `xargs aws/kubectl` and `| aws/kubectl` with mutation verbs
+- `curl`/`wget` to `*.amazonaws.com`
+
 ### Blocked (eval kernel bypass)
 - `import boto3` / `from boto3 import` in Python eval
 - `import kubernetes` / kubernetes client API instantiation
