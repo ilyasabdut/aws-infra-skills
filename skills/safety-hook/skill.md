@@ -122,6 +122,7 @@ Read operations are generally allowed:
 | **Rotation** | `rotate-`, `renew-` | Secret/certificate rotation |
 | **Scaling** | `scale-` | Autoscaling operations |
 | **Completion** | `complete-`, `abort-` | Lifecycle actions, multipart uploads |
+| **Monitoring** | `monitor-`, `unmonitor-` | EC2 detailed monitoring |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
