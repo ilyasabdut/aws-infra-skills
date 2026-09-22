@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas, Redshift, Athena, Glue, EMR, Backup, Cost Explorer, Security Hub, GuardDuty, Inspector) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas, Redshift, Athena, Glue, EMR, Backup, Cost Explorer, Security Hub, GuardDuty, Inspector, Config, X-Ray) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -58,6 +58,8 @@ Use this skill when you need to diagnose:
 - Security Hub finding triage
 - GuardDuty threat investigation
 - Inspector vulnerability investigation
+- Config compliance investigation
+- X-Ray trace investigation
 
 ## Pod Crash Diagnosis
 
@@ -2140,6 +2142,100 @@ aws inspector2 list-findings --filter-criteria '{"findingArn":[{"comparison":"EQ
 - Lambda function with vulnerable runtime dependencies
 - Missing patches for known CVEs
 - Network path allows internet access to sensitive port
+
+### Config Compliance Investigation
+
+```bash
+# 1. Get non-compliant resources for a rule
+aws configservice get-compliance-details-by-config-rule --config-rule-name <rule-name> \
+  --compliance-types NON_COMPLIANT \
+  --query 'EvaluationResults[].{Resource:EvaluationResultIdentifier.EvaluationResultQualifier,Time:ResultRecordedTime}'
+
+# 2. Get resource configuration history
+aws configservice get-resource-config-history \
+  --resource-type <type> --resource-id <id> --limit 5 \
+  --query 'configurationItems[].{Time:configurationItemCaptureTime,State:configurationItemStatus,Config:configuration}'
+
+# 3. Check rule evaluation details
+aws configservice describe-config-rule-evaluation-status --config-rule-names <rule-name> \
+  --query 'ConfigRulesEvaluationStatus[].{Rule:ConfigRuleName,LastRun:LastSuccessfulEvaluationTime,LastFailed:LastFailedEvaluationTime,Error:LastErrorMessage}'
+
+# 4. Get all non-compliant rules
+aws configservice describe-compliance-by-config-rule --compliance-types NON_COMPLIANT \
+  --query 'ComplianceByConfigRules[].{Rule:ConfigRuleName,NonCompliant:Compliance.ComplianceContributorCount.CappedCount}'
+
+# 5. Check remediation status (if auto-remediation configured)
+aws configservice describe-remediation-execution-status --config-rule-name <rule-name> \
+  --query 'RemediationExecutionStatuses[].{Resource:ResourceKey.resourceId,State:State,StepDetails:StepDetails}'
+
+# 6. Get configuration recorder status
+aws configservice describe-configuration-recorder-status \
+  --query 'ConfigurationRecordersStatus[].{Name:name,Recording:recording,LastStatus:lastStatus,LastError:lastErrorMessage}'
+
+# 7. Check delivery channel status
+aws configservice describe-delivery-channel-status \
+  --query 'DeliveryChannelsStatus[].{Name:name,LastDelivery:configHistoryDeliveryInfo.lastSuccessfulTime,LastError:configHistoryDeliveryInfo.lastErrorMessage}'
+```
+
+**Likely causes:**
+- Resource genuinely non-compliant (needs remediation)
+- Rule evaluation not triggered (check recorder status)
+- Configuration recorder stopped
+- Delivery channel S3 bucket permission issue
+- Rule scope excludes resource types
+- Custom Lambda rule timeout or error
+- Aggregator not receiving data from member accounts
+- Rule remediation action failed
+
+### X-Ray Trace Investigation
+
+```bash
+# 1. Find traces with errors
+aws xray get-trace-summaries \
+  --start-time $(date -u -v-1H +%s) --end-time $(date -u +%s) \
+  --filter-expression 'error = true' \
+  --query 'TraceSummaries[].{TraceId:Id,Duration:Duration,HasError:HasError,ResponseTime:ResponseTime}'
+
+# 2. Get full trace details
+aws xray batch-get-traces --trace-ids <trace-id> \
+  --query 'Traces[].Segments[].{Id:Id,Document:Document}'
+
+# 3. Find slow traces (> 5 seconds)
+aws xray get-trace-summaries \
+  --start-time $(date -u -v-1H +%s) --end-time $(date -u +%s) \
+  --filter-expression 'responsetime > 5' \
+  --query 'TraceSummaries[].{TraceId:Id,Duration:Duration,Service:EntryPoint.Name}'
+
+# 4. Filter by service name
+aws xray get-trace-summaries \
+  --start-time $(date -u -v-1H +%s) --end-time $(date -u +%s) \
+  --filter-expression 'service("<service-name>")' \
+  --query 'TraceSummaries[].{TraceId:Id,Duration:Duration,HasError:HasError}'
+
+# 5. Filter by annotation
+aws xray get-trace-summaries \
+  --start-time $(date -u -v-1H +%s) --end-time $(date -u +%s) \
+  --filter-expression 'annotation.user_id = "<user-id>"'
+
+# 6. Get service graph for dependencies
+aws xray get-service-graph \
+  --start-time $(date -u -v-1H +%s) --end-time $(date -u +%s) \
+  --query 'Services[].{Name:Name,Type:Type,Edges:Edges[].{Target:ReferenceId,ErrorRate:SummaryStatistics.ErrorStatistics.ThrottleCount}}'
+
+# 7. Check trace sampling rules
+aws xray get-sampling-rules \
+  --query 'SamplingRuleRecords[].{Name:SamplingRule.RuleName,Rate:SamplingRule.FixedRate,Host:SamplingRule.Host,Service:SamplingRule.ServiceName}'
+```
+
+**Likely causes:**
+- Downstream service timeout (check trace segments)
+- Database query slow (look for DB segment duration)
+- Cold start latency (Lambda init segment)
+- External API call failure (HTTP segment errors)
+- Throttling (429 responses in segments)
+- Missing X-Ray SDK instrumentation (gaps in trace)
+- Sampling rate too low (missing traces)
+- Cross-account tracing not configured
 
 ## Standard Diagnosis Output Format
 
