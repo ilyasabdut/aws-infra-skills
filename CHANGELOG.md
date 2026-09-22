@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-09-23
+
+### Added
+- **diagnostic-workflows skill**: DynamoDB throttling/latency diagnosis (capacity, throttled requests, GSI issues)
+- **diagnostic-workflows skill**: ElastiCache connection/performance diagnosis (CPU, memory, evictions, connections)
+- **diagnostic-workflows skill**: Step Functions execution failures (history, failed steps, throttling)
+- **diagnostic-workflows skill**: Kinesis stream throughput diagnosis (throughput exceeded, iterator age, shards)
+
 ## [1.11.0] - 2026-09-23
 
 ### Added
@@ -237,6 +245,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.12.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.8.1...v1.9.0
