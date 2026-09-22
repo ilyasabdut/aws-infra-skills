@@ -56,35 +56,53 @@ const AWS_BLOCKED_SERVICES: Record<string, true> = {
 
 // AWS mutation verb patterns
 const AWS_MUTATION_VERBS = [
+	// CRUD
 	"delete-",
-	"terminate-",
-	"modify-",
-	"update-",
 	"create-",
 	"put-",
 	"remove-",
-	"deregister-",
-	"attach-",
-	"detach-",
-	"enable-",
-	"disable-",
+	"update-",
+	"modify-",
+	// Lifecycle
+	"terminate-",
 	"start-",
 	"stop-",
 	"reboot-",
-	"add-",
+	"enable-",
+	"disable-",
+	// Attachment
+	"attach-",
+	"detach-",
 	"register-",
+	"deregister-",
 	"associate-",
 	"disassociate-",
+	// Security
 	"authorize-",
 	"revoke-",
+	// Resource
 	"import-",
 	"copy-",
+	"allocate-",
+	"release-",
+	"cancel-",
+	// Approval
+	"accept-",
+	"reject-",
+	// Tagging
+	"tag-resource",
+	"untag-resource",
+	// Messaging
 	"send-",
 	"invoke",
 	"publish",
+	"send-command",
+	// Compute
 	"run-instances",
 	"run-task",
-	"send-command",
+	// Other
+	"add-",
+	"write-",
 ];
 
 // kubectl write subcommands (for specific error messages)

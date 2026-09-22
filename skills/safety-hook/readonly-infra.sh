@@ -141,11 +141,18 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
     fi
     
     # Block mutation verbs across all services - single combined regex (no loop)
-    # Patterns: delete-, terminate-, modify-, update-, create-, put-, remove-, deregister-,
-    #           attach-, detach-, enable-, disable-, start-, stop-, reboot-, add-,
-    #           register-, associate-, disassociate-, authorize-, revoke-, import-,
-    #           copy-, send-, invoke, publish, run-instances, run-task, send-command
-    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-instances|run-task|send-command) ]]; then
+    # Patterns grouped by category:
+    #   CRUD: delete-, create-, put-, remove-, update-, modify-
+    #   Lifecycle: terminate-, start-, stop-, reboot-, enable-, disable-
+    #   Attachment: attach-, detach-, register-, deregister-, associate-, disassociate-
+    #   Security: authorize-, revoke-
+    #   Resource: import-, copy-, allocate-, release-, cancel-
+    #   Approval: accept-, reject-
+    #   Tagging: tag-resource, untag-resource
+    #   Messaging: send-, invoke, publish, send-command
+    #   Compute: run-instances, run-task
+    #   Other: add-, write-
+    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-instances|run-task|send-command|tag-resource|untag-resource|allocate-|release-|accept-|reject-|cancel-|write-) ]]; then
         block "aws $SERVICE mutation operation is not permitted. Read-only: describe-*, list-*, get-*"
     fi
 fi
