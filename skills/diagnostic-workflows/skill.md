@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -43,6 +43,9 @@ Use this skill when you need to diagnose:
 - Route53 health check failures
 - ACM certificate issues
 - Secrets Manager rotation issues
+- S3 access/permission issues
+- SSM parameter/command issues
+- VPC connectivity issues
 
 ## Pod Crash Diagnosis
 
@@ -1513,6 +1516,128 @@ aws secretsmanager get-secret-value --secret-id <secret-name> --version-stage AW
 - AWSPENDING version stuck (previous rotation failed mid-way)
 - Rotation schedule misconfigured
 - KMS key permissions for Lambda
+
+### S3 Access/Permission Issues
+
+```bash
+# 1. Check bucket exists and location
+aws s3api head-bucket --bucket <bucket-name> 2>&1 || echo "Bucket not accessible"
+aws s3api get-bucket-location --bucket <bucket-name>
+
+# 2. Check bucket policy
+aws s3api get-bucket-policy --bucket <bucket-name> --query 'Policy' --output text | jq .
+
+# 3. Check bucket ACL
+aws s3api get-bucket-acl --bucket <bucket-name>
+
+# 4. Check public access block
+aws s3api get-public-access-block --bucket <bucket-name>
+
+# 5. Check object ownership
+aws s3api get-bucket-ownership-controls --bucket <bucket-name>
+
+# 6. Check if object exists and metadata
+aws s3api head-object --bucket <bucket-name> --key <object-key>
+
+# 7. Check bucket encryption
+aws s3api get-bucket-encryption --bucket <bucket-name>
+
+# 8. Check CORS configuration (for browser access issues)
+aws s3api get-bucket-cors --bucket <bucket-name>
+```
+
+**Likely causes:**
+- Bucket policy denying access
+- Public access block preventing intended access
+- Missing s3:GetObject or s3:PutObject permissions
+- Object ownership set to BucketOwnerEnforced (ACLs disabled)
+- KMS key permissions for encrypted objects
+- CORS not configured for browser access
+- VPC endpoint policy restricting access
+
+### SSM Parameter/Command Issues
+
+```bash
+# 1. Check parameter exists
+aws ssm get-parameter --name <parameter-name> --query 'Parameter.{Name:Name,Type:Type,Version:Version}'
+
+# 2. Check parameter history
+aws ssm get-parameter-history --name <parameter-name> --max-results 5
+
+# 3. Check SSM agent status on instance
+aws ssm describe-instance-information --filters Key=InstanceIds,Values=<instance-id> \
+  --query 'InstanceInformationList[].{Id:InstanceId,Status:PingStatus,Agent:AgentVersion,Platform:PlatformType}'
+
+# 4. Check command invocation status
+aws ssm list-command-invocations --command-id <command-id> \
+  --query 'CommandInvocations[].{Instance:InstanceId,Status:Status,StatusDetails:StatusDetails}'
+
+# 5. Get command output
+aws ssm get-command-invocation --command-id <command-id> --instance-id <instance-id> \
+  --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}'
+
+# 6. Check SSM agent logs (via Run Command if agent responsive)
+aws ssm list-commands --instance-id <instance-id> --max-results 10 \
+  --query 'Commands[].{Id:CommandId,Status:Status,Doc:DocumentName}'
+
+# 7. Check Systems Manager inventory
+aws ssm get-inventory --instance-ids <instance-id>
+```
+
+**Likely causes:**
+- SSM agent not installed or not running
+- Instance not registered with SSM (missing IAM role)
+- Network connectivity to SSM endpoints (VPC endpoint or NAT)
+- Parameter not found or wrong path
+- KMS permissions for SecureString parameters
+- Command timeout (long-running script)
+- Instance in terminated/stopped state
+
+### VPC Connectivity Issues
+
+```bash
+# 1. Check VPC configuration
+aws ec2 describe-vpcs --vpc-ids <vpc-id> \
+  --query 'Vpcs[].{Id:VpcId,Cidr:CidrBlock,State:State}'
+
+# 2. Check subnets
+aws ec2 describe-subnets --filters Name=vpc-id,Values=<vpc-id> \
+  --query 'Subnets[].{Id:SubnetId,Cidr:CidrBlock,AZ:AvailabilityZone,Public:MapPublicIpOnLaunch,AvailableIPs:AvailableIpAddressCount}'
+
+# 3. Check route tables
+aws ec2 describe-route-tables --filters Name=vpc-id,Values=<vpc-id> \
+  --query 'RouteTables[].{Id:RouteTableId,Routes:Routes[].{Dest:DestinationCidrBlock,Target:GatewayId||NatGatewayId||TransitGatewayId}}'
+
+# 4. Check NAT gateways
+aws ec2 describe-nat-gateways --filter Name=vpc-id,Values=<vpc-id> \
+  --query 'NatGateways[].{Id:NatGatewayId,State:State,Subnet:SubnetId}'
+
+# 5. Check Internet Gateway
+aws ec2 describe-internet-gateways --filters Name=attachment.vpc-id,Values=<vpc-id> \
+  --query 'InternetGateways[].{Id:InternetGatewayId,State:Attachments[0].State}'
+
+# 6. Check VPC endpoints
+aws ec2 describe-vpc-endpoints --filters Name=vpc-id,Values=<vpc-id> \
+  --query 'VpcEndpoints[].{Id:VpcEndpointId,Service:ServiceName,Type:VpcEndpointType,State:State}'
+
+# 7. Check NACLs
+aws ec2 describe-network-acls --filters Name=vpc-id,Values=<vpc-id> \
+  --query 'NetworkAcls[].{Id:NetworkAclId,Inbound:Entries[?Egress==`false`],Outbound:Entries[?Egress==`true`]}'
+
+# 8. Check VPC Flow Logs (if enabled)
+aws ec2 describe-flow-logs --filter Name=resource-id,Values=<vpc-id> \
+  --query 'FlowLogs[].{Id:FlowLogId,Status:FlowLogStatus,LogGroup:LogGroupName}'
+```
+
+**Likely causes:**
+- No route to destination (missing route in route table)
+- NAT gateway in wrong subnet or failed state
+- Internet gateway not attached
+- NACL blocking traffic (stateless, check both inbound/outbound)
+- Security group rules (checked at instance level)
+- VPC endpoint policy too restrictive
+- Subnet has no available IPs
+- VPC peering/Transit Gateway route missing
 
 ## Standard Diagnosis Output Format
 
