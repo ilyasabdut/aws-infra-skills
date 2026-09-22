@@ -380,6 +380,11 @@ export default function readonlyInfraHook(pi: ExtensionAPI): void {
 				} satisfies BlockResult;
 			}
 
+			// Allow CloudWatch Logs Insights query operations (read-only despite start- prefix)
+			if (/aws\s+logs\s+(start-query|stop-query|get-query-results)/.test(command)) {
+				return; // Allow
+			}
+
 			// Check mutation verbs
 			for (const verb of AWS_MUTATION_VERBS) {
 				const pattern = new RegExp(`aws\\s+[a-z0-9-]+\\s+${verb.replace("-", "\\-")}`);
