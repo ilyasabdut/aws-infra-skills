@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0] - 2026-09-23
+
+### Added
+- **diagnostic-workflows skill**: Config compliance investigation (rule evaluation, resource history, remediation status, recorder/delivery channel)
+- **diagnostic-workflows skill**: X-Ray trace investigation (error/slow traces, service graph, sampling rules, trace filtering)
+
 ## [1.22.0] - 2026-09-23
 
 ### Added
@@ -318,6 +324,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.23.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.22.0...v1.23.0
 [1.22.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.21.0...v1.22.0
 [1.21.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.20.0...v1.21.0
 [1.20.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.19.0...v1.20.0
