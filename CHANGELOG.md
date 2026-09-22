@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.5] - 2026-09-23
+
+### Fixed
+- **safety-hook**: Block additional mutation verbs (48 patterns total):
+  - `execute-` (code/SQL execution: `execute-statement`, `execute-command`)
+  - `set-`, `reset-` (configuration changes: `set-bucket-policy`, `reset-db-parameter-group`)
+  - `restore-`, `failover-`, `promote-`, `revert-` (recovery/DR operations)
+  - `move-` (resource movement: `move-address-to-vpc`)
+  - `batch-write-`, `batch-delete-`, `batch-put-` (DynamoDB batch mutations)
+
 ## [1.23.4] - 2026-09-23
 
 ### Fixed
@@ -354,6 +364,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.23.5]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.4...v1.23.5
 [1.23.4]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.3...v1.23.4
 [1.23.3]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.2...v1.23.3
 [1.23.2]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.1...v1.23.2
