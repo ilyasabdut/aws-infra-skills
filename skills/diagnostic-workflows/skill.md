@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -46,6 +46,9 @@ Use this skill when you need to diagnose:
 - S3 access/permission issues
 - SSM parameter/command issues
 - VPC connectivity issues
+- CloudTrail event investigation
+- EFS mount/performance issues
+- Service quotas/limits issues
 
 ## Pod Crash Diagnosis
 
@@ -1638,6 +1641,131 @@ aws ec2 describe-flow-logs --filter Name=resource-id,Values=<vpc-id> \
 - VPC endpoint policy too restrictive
 - Subnet has no available IPs
 - VPC peering/Transit Gateway route missing
+
+### CloudTrail Event Investigation
+
+```bash
+# 1. Check trail status
+aws cloudtrail get-trail-status --name <trail-name> \
+  --query '{IsLogging:IsLogging,LatestDeliveryTime:LatestDeliveryTime,LatestDeliveryError:LatestDeliveryError}'
+
+# 2. List trails
+aws cloudtrail describe-trails \
+  --query 'trailList[].{Name:Name,Bucket:S3BucketName,IsMultiRegion:IsMultiRegionTrail,IsOrg:IsOrganizationTrail}'
+
+# 3. Look up recent events by user
+aws cloudtrail lookup-events --lookup-attributes AttributeKey=Username,AttributeValue=<username> \
+  --max-results 10 --query 'Events[].{Time:EventTime,Name:EventName,Source:EventSource}'
+
+# 4. Look up events by resource
+aws cloudtrail lookup-events --lookup-attributes AttributeKey=ResourceName,AttributeValue=<resource-name> \
+  --max-results 10
+
+# 5. Look up events by event name (e.g., DeleteBucket)
+aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=<event-name> \
+  --max-results 20
+
+# 6. Check for errors in recent API calls
+aws cloudtrail lookup-events --max-results 50 \
+  --query 'Events[?contains(CloudTrailEvent, `errorCode`)].{Time:EventTime,Name:EventName,User:Username}'
+
+# 7. Check event selectors (what's being logged)
+aws cloudtrail get-event-selectors --trail-name <trail-name>
+```
+
+**Likely causes:**
+- Trail logging stopped (IsLogging: false)
+- S3 bucket policy changed, blocking delivery
+- KMS key permissions for encrypted trails
+- Event selectors filtering out needed events
+- Multi-region trail needed but not configured
+- Management events vs data events not selected
+
+### EFS Mount/Performance Issues
+
+```bash
+# 1. Check file system status
+aws efs describe-file-systems --file-system-id <fs-id> \
+  --query 'FileSystems[].{Id:FileSystemId,State:LifeCycleState,Size:SizeInBytes.Value,Mode:PerformanceMode,Throughput:ThroughputMode}'
+
+# 2. Check mount targets
+aws efs describe-mount-targets --file-system-id <fs-id> \
+  --query 'MountTargets[].{Id:MountTargetId,State:LifeCycleState,Subnet:SubnetId,IP:IpAddress,AZ:AvailabilityZoneName}'
+
+# 3. Check mount target security groups
+aws efs describe-mount-target-security-groups --mount-target-id <mount-target-id>
+
+# 4. Check access points
+aws efs describe-access-points --file-system-id <fs-id> \
+  --query 'AccessPoints[].{Id:AccessPointId,State:LifeCycleState,Path:RootDirectory.Path,PosixUser:PosixUser}'
+
+# 5. Check file system policy
+aws efs describe-file-system-policy --file-system-id <fs-id>
+
+# 6. Check CloudWatch metrics for throughput/IOPS
+aws cloudwatch get-metric-statistics --namespace AWS/EFS --metric-name TotalIOBytes \
+  --dimensions Name=FileSystemId,Value=<fs-id> --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) --period 300 --statistics Sum
+
+# 7. Check burst credits (for bursting throughput mode)
+aws cloudwatch get-metric-statistics --namespace AWS/EFS --metric-name BurstCreditBalance \
+  --dimensions Name=FileSystemId,Value=<fs-id> --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) --period 300 --statistics Average
+```
+
+**Likely causes:**
+- Mount target not in same AZ as EC2 instance
+- Security group blocking NFS port 2049
+- File system policy denying access
+- Burst credits exhausted (bursting mode)
+- VPC DNS resolution not enabled
+- Subnet route table missing
+- Access point POSIX permissions mismatch
+
+### Service Quotas/Limits Issues
+
+```bash
+# 1. Check specific quota value
+aws service-quotas get-service-quota --service-code <service-code> --quota-code <quota-code> \
+  --query '{Name:QuotaName,Value:Value,Adjustable:Adjustable}'
+
+# 2. List quotas for a service
+aws service-quotas list-service-quotas --service-code <service-code> \
+  --query 'Quotas[].{Name:QuotaName,Value:Value,Code:QuotaCode}' | head -30
+
+# 3. Get default quota value
+aws service-quotas get-aws-default-service-quota --service-code <service-code> --quota-code <quota-code>
+
+# 4. Check quota request history
+aws service-quotas list-requested-service-quota-change-history-by-quota \
+  --service-code <service-code> --quota-code <quota-code> \
+  --query 'RequestedQuotas[].{Status:Status,Requested:DesiredValue,Created:Created}'
+
+# 5. List all services
+aws service-quotas list-services --query 'Services[].{Code:ServiceCode,Name:ServiceName}'
+
+# 6. Common quotas to check
+# EC2 On-Demand instances
+aws service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A
+# Lambda concurrent executions
+aws service-quotas get-service-quota --service-code lambda --quota-code L-B99A9384
+# EBS gp3 volume storage
+aws service-quotas get-service-quota --service-code ebs --quota-code L-7A658B76
+# VPCs per region
+aws service-quotas get-service-quota --service-code vpc --quota-code L-F678F1CE
+
+# 7. Check CloudWatch for quota usage alarms
+aws cloudwatch describe-alarms --alarm-name-prefix "ServiceQuota" \
+  --query 'MetricAlarms[].{Name:AlarmName,State:StateValue}'
+```
+
+**Likely causes:**
+- Quota reached (request increase via console or API)
+- Regional quota vs global quota confusion
+- Applied quota lower than default (check history)
+- Service not supported in region
+- Account-level limits (new accounts have lower limits)
+- Resource-specific limits (e.g., rules per security group)
 
 ## Standard Diagnosis Output Format
 
