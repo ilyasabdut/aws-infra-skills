@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -39,6 +39,10 @@ Use this skill when you need to diagnose:
 - ECS service and task issues
 - Auto Scaling group issues
 - SNS delivery issues
+- WAF blocked requests
+- Route53 health check failures
+- ACM certificate issues
+- Secrets Manager rotation issues
 
 ## Pod Crash Diagnosis
 
@@ -1324,6 +1328,191 @@ aws logs filter-log-events \
 - Dead-letter queue receiving failures
 - IAM permissions for cross-account delivery
 - Encryption key access issues (KMS)
+
+### WAF Blocked Requests
+
+```bash
+# 1. Check Web ACL overview
+aws wafv2 get-web-acl --name <web-acl-name> --scope REGIONAL --id <web-acl-id> \
+  --query 'WebACL.{Name:Name,DefaultAction:DefaultAction,Rules:Rules[].Name}'
+
+# 2. Check blocked requests metric
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/WAFV2 \
+  --metric-name BlockedRequests \
+  --dimensions Name=WebACL,Value=<web-acl-name> Name=Region,Value=<region> Name=Rule,Value=ALL \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 3. Check allowed vs blocked ratio
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/WAFV2 \
+  --metric-name AllowedRequests \
+  --dimensions Name=WebACL,Value=<web-acl-name> Name=Region,Value=<region> Name=Rule,Value=ALL \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 4. Check sampled requests (if logging enabled)
+aws wafv2 get-sampled-requests \
+  --web-acl-arn <web-acl-arn> \
+  --rule-metric-name <rule-name> \
+  --scope REGIONAL \
+  --time-window StartTime=$(date -u -v-3H +%Y-%m-%dT%H:%M:%SZ),EndTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --max-items 100
+
+# 5. Check logging configuration
+aws wafv2 get-logging-configuration --resource-arn <web-acl-arn>
+
+# 6. Check WAF logs (if sent to CloudWatch)
+aws logs filter-log-events \
+  --log-group-name aws-waf-logs-<web-acl-name> \
+  --filter-pattern '{ $.action = "BLOCK" }' \
+  --limit 20
+```
+
+**Likely causes:**
+- Rate-based rule triggered (too many requests from IP)
+- SQL injection / XSS rule matched legitimate content
+- Geo-restriction blocking valid region
+- IP reputation list blocking CDN/proxy IPs
+- Custom rule regex too aggressive
+- Bot control blocking legitimate automation
+
+### Route53 Health Check Failures
+
+```bash
+# 1. List health checks
+aws route53 list-health-checks \
+  --query 'HealthChecks[].{Id:Id,Name:HealthCheckConfig.FullyQualifiedDomainName,Type:HealthCheckConfig.Type}'
+
+# 2. Get health check status
+aws route53 get-health-check-status --health-check-id <health-check-id>
+
+# 3. Get health check details
+aws route53 get-health-check --health-check-id <health-check-id> \
+  --query 'HealthCheck.HealthCheckConfig'
+
+# 4. Check health check metric
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Route53 \
+  --metric-name HealthCheckStatus \
+  --dimensions Name=HealthCheckId,Value=<health-check-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Minimum
+
+# 5. Check connection time
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Route53 \
+  --metric-name ConnectionTime \
+  --dimensions Name=HealthCheckId,Value=<health-check-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average Maximum
+
+# 6. List associated records
+aws route53 list-resource-record-sets --hosted-zone-id <zone-id> \
+  --query 'ResourceRecordSets[?HealthCheckId==`<health-check-id>`]'
+```
+
+**Likely causes:**
+- Endpoint returning non-2xx status code
+- Endpoint timeout (> configured threshold)
+- SSL certificate issues (for HTTPS checks)
+- Security group blocking Route53 health checker IPs
+- String match failing (response body changed)
+- Endpoint IP changed but health check not updated
+
+### ACM Certificate Issues
+
+```bash
+# 1. List certificates
+aws acm list-certificates \
+  --query 'CertificateSummaryList[].{Domain:DomainName,Status:Status,Type:Type}'
+
+# 2. Get certificate details
+aws acm describe-certificate --certificate-arn <certificate-arn> \
+  --query 'Certificate.{Domain:DomainName,Status:Status,Type:Type,NotAfter:NotAfter,InUse:InUseBy}'
+
+# 3. Check validation status (for pending certificates)
+aws acm describe-certificate --certificate-arn <certificate-arn> \
+  --query 'Certificate.DomainValidationOptions[].{Domain:DomainName,Status:ValidationStatus,Method:ValidationMethod}'
+
+# 4. Check certificate expiration
+aws acm describe-certificate --certificate-arn <certificate-arn> \
+  --query 'Certificate.{NotBefore:NotBefore,NotAfter:NotAfter,RenewalSummary:RenewalSummary}'
+
+# 5. Check days until expiration metric
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/CertificateManager \
+  --metric-name DaysToExpiry \
+  --dimensions Name=CertificateArn,Value=<certificate-arn> \
+  --start-time $(date -u -v-1d +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 86400 \
+  --statistics Minimum
+
+# 6. List certificates about to expire (< 30 days)
+aws acm list-certificates --query 'CertificateSummaryList[?NotAfter<=`'$(date -u -v+30d +%Y-%m-%dT%H:%M:%SZ)'`]'
+```
+
+**Likely causes:**
+- DNS validation record not created/propagated
+- Email validation not completed
+- Certificate expired (renewal failed)
+- Domain ownership verification failed
+- CAA record blocking certificate issuance
+- Certificate not attached to load balancer/CloudFront
+
+### Secrets Manager Rotation Issues
+
+```bash
+# 1. Check secret metadata
+aws secretsmanager describe-secret --secret-id <secret-name> \
+  --query '{Name:Name,RotationEnabled:RotationEnabled,LastRotated:LastRotatedDate,NextRotation:NextRotationDate}'
+
+# 2. Check rotation configuration
+aws secretsmanager describe-secret --secret-id <secret-name> \
+  --query '{RotationLambda:RotationLambdaARN,RotationRules:RotationRules}'
+
+# 3. Check secret versions
+aws secretsmanager list-secret-version-ids --secret-id <secret-name> \
+  --query 'Versions[].{VersionId:VersionId,Stages:VersionStages,Created:CreatedDate}'
+
+# 4. Check rotation Lambda logs
+aws logs filter-log-events \
+  --log-group-name /aws/lambda/<rotation-lambda-name> \
+  --filter-pattern "?ERROR ?error ?failed ?Failed" \
+  --limit 50
+
+# 5. Check rotation Lambda errors
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Errors \
+  --dimensions Name=FunctionName,Value=<rotation-lambda-name> \
+  --start-time $(date -u -v-24H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 3600 \
+  --statistics Sum
+
+# 6. Manually trigger test rotation (read current state first)
+aws secretsmanager get-secret-value --secret-id <secret-name> --version-stage AWSCURRENT \
+  --query '{VersionId:VersionId}'
+```
+
+**Likely causes:**
+- Rotation Lambda missing permissions
+- Rotation Lambda can't reach database (VPC/security group)
+- Database credentials in secret don't have ALTER USER permission
+- AWSPENDING version stuck (previous rotation failed mid-way)
+- Rotation schedule misconfigured
+- KMS key permissions for Lambda
 
 ## Standard Diagnosis Output Format
 
