@@ -109,7 +109,7 @@ Read operations are generally allowed:
 | **Configuration** | `set-`, `reset-`, `change-` | Configuration changes |
 | **Recovery** | `restore-`, `failover-`, `promote-`, `revert-`, `switchover-` | DR operations |
 | **Movement** | `move-`, `migrate-` | Resource movement |
-| **Batch** | `batch-write-`, `batch-delete-`, `batch-put-`, `batch-associate-`, `batch-disassociate-` | Batch mutations |
+| **Batch** | `batch-write-`, `batch-delete-`, `batch-put-`, `batch-associate-`, `batch-disassociate-`, `batch-update-`, `batch-import-` | Batch mutations |
 | **Replacement** | `replace-` | Route/ACL replacement |
 | **Provisioning** | `request-`, `purchase-`, `provision-`, `deprovision-` | Spot/reserved/IPAM |
 | **Assignment** | `assign-`, `unassign-` | IP address assignment |
@@ -124,6 +124,7 @@ Read operations are generally allowed:
 | **Completion** | `complete-`, `abort-` | Lifecycle actions, multipart uploads |
 | **Monitoring** | `monitor-`, `unmonitor-` | EC2 detailed monitoring |
 | **Cleanup** | `purge-` | SQS queue purging, cache purging |
+| **Rebuild** | `rebuild-` | Elastic Beanstalk environment rebuild |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
