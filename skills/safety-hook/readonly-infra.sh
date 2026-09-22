@@ -29,7 +29,7 @@ block() {
 if [[ ! "$CMD" =~ (^|[[:space:]])(kubectl|aws|env|printenv|export|set|python|curl|wget|terraform|pulumi|eksctl|helm|bash|sh|node|bun|eval|xargs|declare|echo|diff)[[:space:]] ]] && \
    [[ ! "$CMD" =~ ^(env|printenv|export|set|eval|declare)$ ]] && \
    [[ ! "$CMD" =~ \|[[:space:]]*(aws|kubectl) ]] && \
-   [[ ! "$CMD" =~ \$\(|\`|\<\( ]]; then
+   [[ ! "$CMD" =~ \$\(|\`|\<\(|\<\<\< ]]; then
     exit 0
 fi
 
@@ -194,6 +194,11 @@ fi
 # Block process substitution with dangerous commands
 if [[ "$CMD" =~ \<\( ]] && [[ "$CMD" =~ (kubectl[[:space:]]+(delete|apply|exec|scale)|aws[[:space:]]+iam|terminate-|delete-cluster|create-|modify-) ]]; then
     block "Process substitution with dangerous commands is not permitted."
+fi
+
+# Block here-string with dangerous commands
+if [[ "$CMD" =~ \<\<\< ]] && [[ "$CMD" =~ (kubectl[[:space:]]+(delete|apply|exec|scale)|aws[[:space:]]+iam|terminate-|delete-cluster|create-|modify-) ]]; then
+    block "Here-string with dangerous commands is not permitted."
 fi
 # Block IaC tools that can modify infrastructure
 if [[ "$CMD" =~ (^|[[:space:]])(terraform|pulumi|eksctl|helm)[[:space:]] ]]; then
