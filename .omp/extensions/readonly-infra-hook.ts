@@ -233,14 +233,14 @@ export default function readonlyInfraHook(pi: ExtensionAPI): void {
 
 		// ========== CHAINED COMMAND DETECTION ==========
 		// Detect dangerous commands after ; && || before allowlist short-circuits
-		if (/[;&|]\s*(kubectl\s+(delete|apply|exec|scale|edit|patch|drain|cordon|create|run))/.test(command)) {
+		if (/[\n;&|]\s*(kubectl\s+(delete|apply|exec|scale|edit|patch|drain|cordon|create|run))/.test(command)) {
 			return {
 				block: true,
 				reason: `Blocked: Chained kubectl mutation command detected.\nRun commands separately.`,
 			} satisfies BlockResult;
 		}
-		if (/[;&|]\s*(aws\s+iam)/.test(command) ||
-			/[;&|]\s*(aws\s+[a-z0-9-]+\s+(delete-|terminate-|create-|modify-))/.test(command)) {
+		if (/[\n;&|]\s*(aws\s+iam)/.test(command) ||
+			/[\n;&|]\s*(aws\s+[a-z0-9-]+\s+(delete-|terminate-|create-|modify-))/.test(command)) {
 			return {
 				block: true,
 				reason: `Blocked: Chained AWS mutation command detected.\nRun commands separately.`,
