@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for common Kubernetes and AWS infrastructure issues like CrashLoopBackOff, OOMKilled, and NotReady nodes.
+description: Step-by-step diagnostic procedures for common Kubernetes and AWS infrastructure issues including pod crashes, node problems, storage/PVC issues, network policies, and EKS cluster health.
 ---
 
 # Diagnostic Workflows
@@ -16,6 +16,9 @@ Use this skill when you need to diagnose:
 - Deployment problems (unavailable replicas, stuck rollouts)
 - Scaling issues (HPA, KEDA)
 - Service connectivity problems
+- Storage issues (PVC pending, volume mount failures)
+- Network policy blocking traffic
+- DNS resolution failures
 
 ## Pod Crash Diagnosis
 
@@ -290,6 +293,126 @@ aws elbv2 describe-target-health --target-group-arn <tg-arn>
 # 5. Check security groups
 aws ec2 describe-security-groups --group-ids <sg-id>
 ```
+
+## Storage Issues
+
+### PVC Pending (Not Bound)
+
+```bash
+# 1. Check PVC status
+kubectl get pvc <name> -n <namespace>
+
+# 2. Check PVC events
+kubectl describe pvc <name> -n <namespace>
+
+# 3. Check StorageClass
+kubectl get storageclass
+kubectl describe storageclass <name>
+
+# 4. Check available PVs (for static provisioning)
+kubectl get pv
+
+# 5. Check CSI driver pods
+kubectl get pods -n kube-system -l app=ebs-csi-controller
+kubectl logs -n kube-system -l app=ebs-csi-controller --tail=50
+
+# 6. Check AWS EBS volumes
+aws ec2 describe-volumes --filters "Name=tag:kubernetes.io/cluster/<cluster>,Values=owned"
+```
+
+**Likely causes:**
+- StorageClass doesn't exist
+- No matching PV available (static provisioning)
+- CSI driver not installed or unhealthy
+- Zone mismatch (EBS volumes are AZ-specific)
+- Insufficient AWS permissions for CSI driver
+
+### Pod Stuck on Volume Mount
+
+```bash
+# 1. Check pod events for mount errors
+kubectl describe pod <pod> -n <namespace> | grep -A10 "Events:"
+
+# 2. Check volume attachments
+kubectl get volumeattachments
+
+# 3. Check node where pod is scheduled
+kubectl get pod <pod> -n <namespace> -o jsonpath='{.spec.nodeName}'
+
+# 4. Check EBS attachment from AWS
+aws ec2 describe-volumes --volume-ids <vol-id> --query 'Volumes[*].Attachments'
+
+# 5. Check if volume is stuck in attaching state
+kubectl describe volumeattachment <name>
+```
+
+**Likely causes:**
+- Volume attached to different node (multi-attach not supported)
+- Node cannot reach EBS (network/IAM issue)
+- Volume in wrong AZ
+- Stale volume attachment from crashed node
+
+## Network Policy Issues
+
+### Traffic Blocked by NetworkPolicy
+
+```bash
+# 1. List all network policies in namespace
+kubectl get networkpolicies -n <namespace>
+
+# 2. Check policy details
+kubectl describe networkpolicy <name> -n <namespace>
+
+# 3. Check pod labels (policies select by label)
+kubectl get pod <pod> -n <namespace> --show-labels
+
+# 4. Check if pod matches any policy
+kubectl get networkpolicies -n <namespace> -o yaml | grep -A20 "podSelector:"
+
+# 5. Check namespace labels (for namespace selectors)
+kubectl get namespace <ns> --show-labels
+
+# 6. Check if CNI supports network policies
+kubectl get pods -n kube-system | grep -E "(calico|cilium|weave)"
+```
+
+**Understanding NetworkPolicy:**
+- Default: all traffic allowed (no policies = open)
+- Once ANY policy selects a pod → default deny for that direction
+- Ingress policy: controls incoming traffic TO the pod
+- Egress policy: controls outgoing traffic FROM the pod
+
+**Debugging approach:**
+1. Does the pod match any NetworkPolicy selector?
+2. If yes, does the policy allow the required traffic?
+3. Check both ingress AND egress policies
+4. Check namespace labels for cross-namespace rules
+
+### DNS Resolution Failing
+
+```bash
+# 1. Check CoreDNS pods
+kubectl get pods -n kube-system -l k8s-app=kube-dns
+
+# 2. Check CoreDNS logs
+kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50
+
+# 3. Check DNS service
+kubectl get svc -n kube-system kube-dns
+kubectl get endpoints -n kube-system kube-dns
+
+# 4. Check if NetworkPolicy blocks DNS (UDP 53)
+kubectl get networkpolicies -n <namespace> -o yaml | grep -A30 "egress:"
+
+# 5. Check CoreDNS configmap
+kubectl get configmap -n kube-system coredns -o yaml
+```
+
+**Likely causes:**
+- NetworkPolicy blocking egress to kube-dns (UDP 53)
+- CoreDNS pods not running or unhealthy
+- CoreDNS service has no endpoints
+- Custom DNS config issue
 
 ## EKS Cluster Issues
 
