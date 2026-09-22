@@ -1,6 +1,6 @@
 ---
 name: AWS Investigation
-description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, ACM, Cognito, OpenSearch, Redshift, Athena, CloudTrail, EFS, Service Quotas, and Cost Explorer.
+description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, ACM, Cognito, OpenSearch, Redshift, Athena, CloudTrail, EFS, Service Quotas, Cost Explorer, Glue, EMR, and AWS Backup.
 ---
 
 # AWS Investigation Skill
@@ -45,6 +45,9 @@ Use this skill when investigating:
 - EFS file systems and mount targets
 - Service Quotas and usage limits
 - Cost Explorer spending and anomalies
+- Glue ETL jobs, crawlers, and databases
+- EMR clusters, steps, and instance groups
+- AWS Backup vaults, plans, and recovery points
 
 ## Quick Reference
 
@@ -1290,6 +1293,105 @@ aws ce get-cost-forecast \
   --time-period Start=$(date -u +%Y-%m-%d),End=$(date -u -v+30d +%Y-%m-%d) \
   --metric UNBLENDED_COST \
   --granularity MONTHLY
+```
+
+## Glue Investigation
+
+### List databases and tables
+```bash
+aws glue get-databases
+aws glue get-tables --database-name <database-name>
+```
+
+### Crawlers
+```bash
+aws glue list-crawlers
+aws glue get-crawler --name <crawler-name>
+aws glue get-crawler-metrics --crawler-name-list <crawler-name>
+```
+
+### Jobs and runs
+```bash
+# List jobs
+aws glue list-jobs
+aws glue get-job --job-name <job-name>
+
+# Job runs
+aws glue get-job-runs --job-name <job-name> --max-results 10
+
+# Failed runs
+aws glue get-job-runs --job-name <job-name> \
+  --query 'JobRuns[?JobRunState==`FAILED`]'
+```
+
+### ETL job bookmarks
+```bash
+aws glue get-job-bookmark --job-name <job-name>
+```
+
+## EMR Investigation
+
+### List clusters
+```bash
+aws emr list-clusters --active
+aws emr list-clusters --cluster-states WAITING RUNNING
+aws emr describe-cluster --cluster-id <cluster-id>
+```
+
+### Cluster steps
+```bash
+aws emr list-steps --cluster-id <cluster-id>
+aws emr describe-step --cluster-id <cluster-id> --step-id <step-id>
+
+# Failed steps
+aws emr list-steps --cluster-id <cluster-id> --step-states FAILED
+```
+
+### Instance groups
+```bash
+aws emr list-instance-groups --cluster-id <cluster-id>
+aws emr list-instances --cluster-id <cluster-id>
+```
+
+### Bootstrap actions
+```bash
+aws emr list-bootstrap-actions --cluster-id <cluster-id>
+```
+
+## AWS Backup Investigation
+
+### Backup vaults
+```bash
+aws backup list-backup-vaults
+aws backup describe-backup-vault --backup-vault-name <vault-name>
+```
+
+### Backup plans
+```bash
+aws backup list-backup-plans
+aws backup get-backup-plan --backup-plan-id <plan-id>
+```
+
+### Recovery points
+```bash
+aws backup list-recovery-points-by-backup-vault --backup-vault-name <vault-name>
+aws backup describe-recovery-point \
+  --backup-vault-name <vault-name> \
+  --recovery-point-arn <recovery-point-arn>
+```
+
+### Backup jobs
+```bash
+# Recent backup jobs
+aws backup list-backup-jobs --max-results 20
+
+# Failed backups
+aws backup list-backup-jobs --by-state FAILED
+```
+
+### Protected resources
+```bash
+aws backup list-protected-resources
 ```
 
 ---
