@@ -93,18 +93,23 @@ Read operations are generally allowed:
 
 ### AWS CLI
 
-| Pattern | Reason |
-|---------|--------|
-| `aws iam *` | All IAM operations blocked |
-| `aws * delete-*` | Resource deletion |
-| `aws * terminate-*` | Instance termination |
-| `aws * create-*` | Resource creation |
-| `aws * modify-*` | Resource modification |
-| `aws * update-*` | Resource updates |
-| `aws * put-*` | Configuration writes |
-| `aws s3 rm` | Object deletion |
-| `aws s3 cp <local> s3://` | Object upload |
-| `aws sts assume-role` | Privilege escalation |
+| Category | Patterns | Reason |
+|----------|----------|--------|
+| **Services** | `aws iam *`, `aws organizations *` | Full service block |
+| **CRUD** | `delete-`, `create-`, `put-`, `remove-`, `update-`, `modify-` | Resource mutation |
+| **Lifecycle** | `terminate-`, `start-`, `stop-`, `reboot-`, `enable-`, `disable-` | State changes |
+| **Attachment** | `attach-`, `detach-`, `register-`, `deregister-`, `associate-`, `disassociate-` | Resource linking |
+| **Security** | `authorize-`, `revoke-` | Security group rules |
+| **Resource** | `import-`, `copy-`, `allocate-`, `release-`, `cancel-` | Resource operations |
+| **Approval** | `accept-`, `reject-` | Approval workflows |
+| **Tagging** | `tag-resource`, `untag-resource` | Resource tagging |
+| **Messaging** | `send-`, `invoke`, `publish`, `send-command` | Message/execution |
+| **Compute** | `run-instances`, `run-task` | Instance/task launch |
+| **Other** | `add-`, `write-` | Additional mutations |
+| **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
+| **STS** | `aws sts assume-role` | Privilege escalation |
+
+**Exception**: `aws logs start-query`, `stop-query`, `get-query-results` are allowed (CloudWatch Logs Insights is read-only)
 
 ### Credential Protection
 
