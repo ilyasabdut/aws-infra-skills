@@ -447,6 +447,28 @@ export default function readonlyInfraHook(pi: ExtensionAPI): void {
 			}
 		}
 
+		// ========== EVAL BYPASS BLOCKING ==========
+		if (/\beval\s/.test(command)) {
+			if (/kubectl\s+(delete|apply|exec|scale|edit|patch)/.test(command) ||
+				/aws\s+iam/.test(command) ||
+				/aws\s+[a-z0-9-]+\s+(delete-|create-|terminate-)/.test(command)) {
+				return {
+					block: true,
+					reason: `Blocked: eval with dangerous commands is not permitted.\nUse allowed commands directly.`,
+				} satisfies BlockResult;
+			}
+		}
+
+		// ========== XARGS/PIPE BYPASS BLOCKING ==========
+		if (/xargs\s+(aws|kubectl)/.test(command) || /\|\s*(aws|kubectl)/.test(command)) {
+			if (/(delete|terminate|create|modify|apply|exec|scale|iam)/.test(command)) {
+				return {
+					block: true,
+					reason: `Blocked: Piping to dangerous aws/kubectl commands is not permitted.\nUse allowed commands directly.`,
+				} satisfies BlockResult;
+			}
+		}
+
 		// Command allowed
 		return;
 	});
