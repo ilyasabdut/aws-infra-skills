@@ -155,7 +155,7 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
     #   Configuration: set-, reset-, change-
     #   Recovery: restore-, failover-, promote-, revert-, switchover-
     #   Movement: move-, migrate-
-    #   Batch mutations: batch-write-, batch-delete-, batch-put-, batch-associate-
+    #   Batch mutations: batch-write-, batch-delete-, batch-put-, batch-associate-, batch-disassociate-
     #   Replacement: replace-
     #   Provisioning: request-, purchase-, provision-, deprovision-
     #   Assignment: assign-, unassign-
@@ -171,7 +171,7 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
     #   Monitoring: monitor-, unmonitor-
     #   Cleanup: purge-
     #   Other: add-, write-
-    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-|send-command|tag-resource|untag-resource|allocate-|release-|accept-|reject-|cancel-|write-|execute-|set-|reset-|restore-|failover-|promote-|revert-|move-|batch-write-|batch-delete-|batch-put-|batch-associate-|replace-|request-|purchase-|assign-|unassign-|submit-|apply-|bundle-|confirm-|switchover-|migrate-|export-|clone-|lock-|unlock-|provision-|deprovision-|advertise-|withdraw-|rotate-|renew-|scale-|suspend-|resume-|complete-|abort-|change-|monitor-|unmonitor-|purge-) ]]; then
+    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-|send-command|tag-resource|untag-resource|allocate-|release-|accept-|reject-|cancel-|write-|execute-|set-|reset-|restore-|failover-|promote-|revert-|move-|batch-write-|batch-delete-|batch-put-|batch-associate-|batch-disassociate-|replace-|request-|purchase-|assign-|unassign-|submit-|apply-|bundle-|confirm-|switchover-|migrate-|export-|clone-|lock-|unlock-|provision-|deprovision-|advertise-|withdraw-|rotate-|renew-|scale-|suspend-|resume-|complete-|abort-|change-|monitor-|unmonitor-|purge-) ]]; then
         block "aws $SERVICE mutation operation is not permitted. Read-only: describe-*, list-*, get-*"
     fi
 fi

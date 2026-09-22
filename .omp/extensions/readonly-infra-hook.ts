@@ -121,6 +121,7 @@ const AWS_MUTATION_VERBS = [
 	"batch-delete-",
 	"batch-put-",
 	"batch-associate-",
+	"batch-disassociate-",
 	// Replacement
 	"replace-",
 	// Provisioning
