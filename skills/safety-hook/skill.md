@@ -109,7 +109,7 @@ Read operations are generally allowed:
 | **Configuration** | `set-`, `reset-`, `change-` | Configuration changes |
 | **Recovery** | `restore-`, `failover-`, `promote-`, `revert-`, `switchover-` | DR operations |
 | **Movement** | `move-`, `migrate-` | Resource movement |
-| **Batch** | `batch-write-`, `batch-delete-`, `batch-put-`, `batch-associate-` | Batch mutations |
+| **Batch** | `batch-write-`, `batch-delete-`, `batch-put-`, `batch-associate-`, `batch-disassociate-` | Batch mutations |
 | **Replacement** | `replace-` | Route/ACL replacement |
 | **Provisioning** | `request-`, `purchase-`, `provision-`, `deprovision-` | Spot/reserved/IPAM |
 | **Assignment** | `assign-`, `unassign-` | IP address assignment |
