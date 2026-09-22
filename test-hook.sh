@@ -99,6 +99,16 @@ test_block "subshell aws terminate" 'VAR=$(aws ec2 terminate-instances --instanc
 test_block "process substitution kubectl delete" 'diff <(kubectl delete pod test) <(echo x)'
 
 echo ""
+echo "--- Heredoc and here-string tests ---"
+test_block "heredoc kubectl delete" 'cat <<EOF
+kubectl delete pod test
+EOF'
+test_block "here-string kubectl delete" 'cat <<< "kubectl delete pod test"'
+test_block "heredoc aws iam" 'bash <<EOF
+aws iam list-users
+EOF'
+
+echo ""
 echo "--- Environment inspection tests ---"
 test_block "declare -x" "declare -x"
 test_block "export -p" "export -p"
