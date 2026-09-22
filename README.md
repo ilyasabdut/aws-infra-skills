@@ -138,6 +138,10 @@ This is **application-level filtering**, not IAM-based:
 - Underlying AWS credentials may have broader permissions
 - Defense in depth: combine with short-lived STS credentials
 
+**Known limitations**:
+- Shell metaprogramming (variable/array expansion) cannot be statically analyzed
+- The hook operates on raw command strings, not executed code
+
 For production, consider:
 1. Short-lived STS session credentials (1 hour expiry)
 2. CloudTrail monitoring for unexpected API patterns
