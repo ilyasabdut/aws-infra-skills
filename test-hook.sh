@@ -109,6 +109,14 @@ aws iam list-users
 EOF'
 
 echo ""
+echo "--- Chained command tests ---"
+test_block "semicolon kubectl delete" 'kubectl get pods; kubectl delete pod test'
+test_block "&& kubectl delete" 'kubectl get pods && kubectl delete pod test'
+test_block "|| kubectl delete" 'true || kubectl delete pod test'
+test_block "semicolon aws iam" 'aws s3 ls; aws iam list-users'
+test_block "semicolon aws terminate" 'aws s3 ls; aws ec2 terminate-instances --instance-ids i-123'
+
+echo ""
 echo "--- Environment inspection tests ---"
 test_block "declare -x" "declare -x"
 test_block "export -p" "export -p"

@@ -34,6 +34,22 @@ if [[ ! "$CMD" =~ (^|[[:space:]])(kubectl|aws|env|printenv|export|set|python|cur
 fi
 
 # ============================================================================
+# CHAINED COMMAND DETECTION
+# Scan for dangerous commands after ; && || before allowlist short-circuits
+# ============================================================================
+
+# Block dangerous kubectl after chain operators
+if [[ "$CMD" =~ [';''|''&'][[:space:]]*(kubectl[[:space:]]+(delete|apply|exec|scale|edit|patch|drain|cordon|create|run)) ]]; then
+    block "Chained kubectl mutation command detected. Run commands separately."
+fi
+
+# Block dangerous aws after chain operators
+if [[ "$CMD" =~ [';''|''&'][[:space:]]*(aws[[:space:]]+iam) ]] || \
+   [[ "$CMD" =~ [';''|''&'][[:space:]]*(aws[[:space:]]+[a-z0-9-]+[[:space:]]+(delete-|terminate-|create-|modify-)) ]]; then
+    block "Chained AWS mutation command detected. Run commands separately."
+fi
+
+# ============================================================================
 # KUBECTL FILTERING (allowlist approach)
 # ============================================================================
 
