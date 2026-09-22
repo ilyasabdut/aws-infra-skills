@@ -105,6 +105,11 @@ Read operations are generally allowed:
 | **Tagging** | `tag-resource`, `untag-resource` | Resource tagging |
 | **Messaging** | `send-`, `invoke`, `publish`, `send-command` | Message/execution |
 | **Compute** | `run-instances`, `run-task` | Instance/task launch |
+| **Execution** | `execute-` | Code/SQL execution |
+| **Configuration** | `set-`, `reset-` | Configuration changes |
+| **Recovery** | `restore-`, `failover-`, `promote-`, `revert-` | DR operations |
+| **Movement** | `move-` | Resource movement |
+| **Batch** | `batch-write-`, `batch-delete-`, `batch-put-` | DynamoDB batch mutations |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
