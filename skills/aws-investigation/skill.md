@@ -1,23 +1,21 @@
 ---
-name: aws-investigation
-description: Read-only AWS investigation patterns for EKS, EC2, CloudWatch, and infrastructure diagnosis
-triggers:
-  - aws
-  - eks
-  - ec2
-  - cloudwatch
-  - logs
-  - metrics
-  - load balancer
-  - alb
-  - nlb
-  - s3
-  - nodegroup
+name: AWS Investigation
+description: Read-only AWS CLI patterns for investigating EKS clusters, EC2 instances, CloudWatch logs/metrics, load balancers, and S3.
 ---
 
 # AWS Investigation Skill
 
 Read-only AWS CLI patterns for infrastructure investigation. All commands are non-destructive.
+
+## When to Use
+
+Use this skill when investigating:
+- EKS cluster health and configuration
+- EC2 instance status and performance
+- CloudWatch logs for errors or patterns
+- CloudWatch metrics for resource utilization
+- Load balancer health and target status
+- S3 bucket contents (read-only)
 
 ## Quick Reference
 
@@ -303,24 +301,12 @@ aws s3 cp s3://<bucket>/<key> -
 aws s3api head-object --bucket <bucket> --key <key>
 ```
 
-## RDS (if applicable)
-
-### List instances
-```bash
-aws rds describe-db-instances
-aws rds describe-db-clusters  # Aurora
-```
-
-### Instance details
-```bash
-aws rds describe-db-instances --db-instance-identifier <id>
-```
-
 ## VPC and Networking
 
-### Describe VPCs
+### VPCs
 ```bash
 aws ec2 describe-vpcs
+aws ec2 describe-vpcs --vpc-ids <vpc-id>
 ```
 
 ### Subnets
@@ -331,6 +317,7 @@ aws ec2 describe-subnets --filters "Name=vpc-id,Values=<vpc-id>"
 ### Security groups
 ```bash
 aws ec2 describe-security-groups --group-ids <sg-id>
+aws ec2 describe-security-groups --filters "Name=vpc-id,Values=<vpc-id>"
 ```
 
 ### Network interfaces
@@ -340,4 +327,4 @@ aws ec2 describe-network-interfaces --filters "Name=vpc-id,Values=<vpc-id>"
 
 ---
 
-**Note**: This skill only covers read operations. Mutating operations (create, delete, modify, update) are blocked by the safety hook.
+**Important**: This skill only covers read operations. Mutating operations (create, delete, modify, update) should be blocked by a safety hook in production agent environments.

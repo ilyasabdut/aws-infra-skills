@@ -4,188 +4,127 @@ AI agent skills and safety hook for read-only AWS/Kubernetes infrastructure inve
 
 ## Overview
 
-This project enables AI agents (like Hermes on omp) to investigate EKS/Kubernetes infrastructure without the ability to modify or destroy resources.
+This project provides skills that teach AI agents (Claude, Claude Code, omp) how to investigate EKS/Kubernetes infrastructure without the ability to modify or destroy resources.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    AI Agent                             │
-│                       │                                 │
-│                       ▼                                 │
-│               ┌──────────────┐                          │
-│               │   Skills     │  ← what to investigate   │
-│               └──────────────┘                          │
-│                       │                                 │
-│                       ▼                                 │
-│               ┌──────────────┐                          │
-│               │  Safety Hook │  ← blocks dangerous ops  │
-│               └──────────────┘                          │
-│                       │                                 │
-│            ┌──────────┴──────────┐                      │
-│            ▼                     ▼                      │
-│        kubectl                aws cli                   │
-│            │                     │                      │
-│            ▼                     ▼                      │
-│          EKS                 AWS APIs                   │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│                   AI Agent                      │
+│                      │                          │
+│                      ▼                          │
+│              ┌──────────────┐                   │
+│              │    Skills    │ ← what to check   │
+│              └──────────────┘                   │
+│                      │                          │
+│                      ▼                          │
+│              ┌──────────────┐                   │
+│              │ Safety Hook  │ ← blocks writes   │
+│              └──────────────┘                   │
+│                      │                          │
+│          ┌──────────┴──────────┐               │
+│          ▼                     ▼               │
+│    ┌──────────┐          ┌──────────┐          │
+│    │ kubectl  │          │ AWS CLI  │          │
+│    └──────────┘          └──────────┘          │
+└─────────────────────────────────────────────────┘
 ```
 
-## Components
-
-### Skills (`.omp/skills/`)
+## Skills
 
 | Skill | Description |
 |-------|-------------|
-| `k8s-investigation` | kubectl patterns for pods, deployments, nodes, events, logs |
-| `aws-investigation` | AWS CLI patterns for EKS, EC2, CloudWatch, S3 |
-| `diagnostic-workflows` | Step-by-step procedures for common issues |
-| `safety-hook` | Documentation of what's blocked and why |
+| **k8s-investigation** | kubectl patterns for pods, deployments, nodes, logs, events |
+| **aws-investigation** | AWS CLI patterns for EKS, EC2, CloudWatch, S3, load balancers |
+| **diagnostic-workflows** | Step-by-step diagnosis for CrashLoopBackOff, OOMKilled, NotReady, etc. |
+| **safety-hook** | Documentation + script that blocks dangerous operations |
 
-### Safety Hook
+## Installation
 
-| File | Purpose |
-|------|---------|
-| `.omp/extensions/readonly-infra-hook.ts` | **Primary** — omp TypeScript extension (auto-loads) |
-| `.omp/hooks/readonly-infra.sh` | Bash fallback for Claude Code or manual testing |
-| `.omp/hooks/readonly-infra.yaml` | Configuration reference |
+### Claude (claude.ai)
 
-## Quick Start
+1. Go to **Settings > Skills**
+2. Click **Add Skill**
+3. Upload each skill folder from `skills/` as a ZIP
 
-### 1. Set AWS Credentials
+### Claude Code / omp
 
 ```bash
-export AWS_ACCESS_KEY_ID="..."
-export AWS_SECRET_ACCESS_KEY="..."
-export AWS_SESSION_TOKEN="..."  # if using STS
-export AWS_DEFAULT_REGION="ap-southeast-1"
+# Copy skills to your user directory
+cp -r skills/* ~/.omp/agent/skills/
+
+# Or to a specific project
+cp -r skills/* /path/to/project/.omp/skills/
 ```
 
-### 2. Configure kubeconfig
+### Safety Hook Setup
+
+The safety hook blocks dangerous commands before execution:
 
 ```bash
-aws eks update-kubeconfig --name <cluster-name> --region <region>
+# Copy the hook script
+cp skills/safety-hook/readonly-infra.sh ~/.local/bin/infra-hook
+chmod +x ~/.local/bin/infra-hook
+
+# Test it
+infra-hook kubectl get pods        # ✓ allowed
+infra-hook kubectl delete pod x    # ✗ blocked
+infra-hook aws eks describe-cluster --name x  # ✓ allowed
+infra-hook aws iam list-users      # ✗ blocked
 ```
 
-### 3. The Hook is Automatic (omp)
+## What's Allowed vs Blocked
 
-When you start `omp` in this directory, the extension at `.omp/extensions/readonly-infra-hook.ts` auto-loads. No configuration needed.
+### Allowed (read-only)
+- `kubectl get`, `describe`, `logs`, `top`, `version`
+- `aws * describe-*`, `list-*`, `get-*`
+- `aws s3 ls`, `aws s3 cp s3://... -` (download)
 
-To verify it's working:
-```bash
-# In an omp session, try a blocked command - it should fail with a message
-kubectl delete pod test
-# Expected: "Blocked: kubectl delete is a write operation..."
-```
+### Blocked (write operations)
+- `kubectl apply`, `delete`, `exec`, `scale`, `edit`, `patch`
+- `kubectl drain`, `cordon`, `taint`
+- `aws iam *` (all IAM operations)
+- `aws * delete-*`, `create-*`, `modify-*`, `terminate-*`
+- `aws s3 rm`, `aws s3 cp ... s3://` (upload)
+- `env`, `printenv` (credential protection)
 
-### Manual Testing (without omp)
+## Example Usage
 
-```bash
-# Test the bash script directly
-.omp/hooks/readonly-infra.sh kubectl delete pod test
-# Output: BLOCKED: kubectl delete is a write operation...
+Once skills are installed, ask Claude:
 
-.omp/hooks/readonly-infra.sh kubectl get pods -n default
-# (no output, exit 0 = allowed)
-```
+- "Why is my pod in CrashLoopBackOff?"
+- "Check the EKS cluster health for prod-cluster"
+- "Show me CloudWatch logs for the api service"
+- "What's causing memory pressure on node ip-10-0-1-42?"
 
-## What's Allowed
+Claude will use the investigation skills to run appropriate read-only commands.
 
-### kubectl
+## Security Model
 
-- `get`, `describe`, `logs`, `top`
-- `api-resources`, `api-versions`, `cluster-info`, `version`
-- `config view`, `config get-contexts`, `config current-context`
-- `rollout status` (read-only)
+This is **application-level filtering**, not IAM-based:
 
-### AWS CLI
+- The hook blocks commands before execution
+- Underlying AWS credentials may have broader permissions
+- Defense in depth: combine with short-lived STS credentials
 
-- `describe-*`, `list-*`, `get-*` across most services
-- `aws s3 ls`, `aws s3 cp s3://... -` (download to stdout)
-- CloudWatch logs and metrics queries
-
-## What's Blocked
-
-### kubectl
-
-- `apply`, `create`, `delete`, `patch`, `edit`, `replace`
-- `exec`, `cp`, `port-forward`, `attach`, `debug`
-- `scale`, `rollout` (except status)
-- `drain`, `cordon`, `uncordon`, `taint`
-
-### AWS CLI
-
-- All `aws iam` operations
-- `delete-*`, `terminate-*`, `create-*`, `modify-*`, `update-*`, `put-*`
-- `aws s3 rm`, `aws s3 mv`, uploads to S3
-- `aws sts assume-role`
-
-### Credential Protection
-
-- `env`, `printenv`, `export` (bare)
-- `/proc/*/environ` access
-- `echo $AWS_SECRET*`
-
-### Bypass Prevention
-
-- `python* boto3`, `python -c "import boto*"`
-- `curl *.amazonaws.com`
-
-## Usage Examples
-
-### Diagnose a crashing pod
-
-```bash
-kubectl describe pod api-xxx -n production
-kubectl logs api-xxx -n production --previous
-kubectl get events -n production --field-selector involvedObject.name=api-xxx
-```
-
-### Check EKS cluster health
-
-```bash
-aws eks describe-cluster --name my-cluster --query 'cluster.status'
-aws eks list-nodegroups --cluster-name my-cluster
-kubectl get nodes
-kubectl top nodes
-```
-
-### Investigate node issues
-
-```bash
-kubectl describe node ip-10-0-1-123
-aws ec2 describe-instance-status --instance-ids i-0123456789
-```
+For production, consider:
+1. Short-lived STS session credentials (1 hour expiry)
+2. CloudTrail monitoring for unexpected API patterns
+3. Agent transcript review
 
 ## Project Structure
 
 ```
-.omp/
-├── extensions/
-│   └── readonly-infra-hook.ts      # omp TypeScript extension (primary)
-├── skills/
-│   ├── k8s-investigation/SKILL.md
-│   ├── aws-investigation/SKILL.md
-│   ├── diagnostic-workflows/SKILL.md
-│   └── safety-hook/SKILL.md
-└── hooks/
-    ├── readonly-infra.sh           # Bash fallback
-    ├── readonly-infra.yaml         # Configuration reference
-    └── readonly_infra_hook.py      # Python alternative
+skills/
+├── README.md
+├── k8s-investigation/
+│   └── skill.md
+├── aws-investigation/
+│   └── skill.md
+├── diagnostic-workflows/
+│   └── skill.md
+└── safety-hook/
+    ├── skill.md
+    └── readonly-infra.sh
 ```
-
-## Security Model
-
-This is **application-level filtering**, not IAM-based security:
-
-- The hook blocks commands before execution
-- Underlying AWS credentials may have broader permissions
-- Defense in depth: use with short-lived STS credentials
-- Not a security boundary against determined adversaries
-
-For production use, consider:
-1. Short-lived STS session credentials (1 hour expiry)
-2. CloudTrail monitoring for unexpected API patterns
-3. Agent transcript review
-4. Network-level controls if possible
 
 ## License
 

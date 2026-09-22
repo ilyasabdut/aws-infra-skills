@@ -1,23 +1,20 @@
 ---
-name: k8s-investigation
-description: Read-only Kubernetes investigation patterns for diagnosing pod, deployment, node, and cluster issues
-triggers:
-  - kubernetes
-  - k8s
-  - pod
-  - deployment
-  - node
-  - kubectl
-  - crash
-  - CrashLoopBackOff
-  - OOMKilled
-  - NotReady
-  - Pending
+name: Kubernetes Investigation
+description: Read-only Kubernetes investigation patterns for diagnosing pod, deployment, node, and cluster issues without modifying resources.
 ---
 
 # Kubernetes Investigation Skill
 
 Read-only investigation patterns for Kubernetes/EKS clusters. All commands are non-destructive.
+
+## When to Use
+
+Use this skill when investigating:
+- Pod failures (CrashLoopBackOff, OOMKilled, ImagePullBackOff)
+- Deployment issues (unavailable replicas, stuck rollouts)
+- Node problems (NotReady, resource pressure)
+- Service connectivity
+- Scaling behavior (HPA, KEDA)
 
 ## Quick Reference
 
@@ -280,4 +277,4 @@ kubectl describe pod <pod> -n <namespace> | grep -A 5 "Requests:"
 
 ---
 
-**Note**: This skill only covers read operations. Write operations (apply, delete, scale, exec) are blocked by the safety hook.
+**Important**: This skill only covers read operations. Write operations (apply, delete, scale, exec) should be blocked by a safety hook in production agent environments.

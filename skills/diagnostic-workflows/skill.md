@@ -1,26 +1,21 @@
 ---
-name: diagnostic-workflows
-description: Step-by-step diagnostic procedures for common Kubernetes and AWS infrastructure issues
-triggers:
-  - diagnose
-  - debug
-  - troubleshoot
-  - why
-  - crash
-  - CrashLoopBackOff
-  - OOMKilled
-  - ImagePullBackOff
-  - NotReady
-  - Pending
-  - unavailable
-  - not working
-  - failing
-  - error
+name: Diagnostic Workflows
+description: Step-by-step diagnostic procedures for common Kubernetes and AWS infrastructure issues like CrashLoopBackOff, OOMKilled, and NotReady nodes.
 ---
 
 # Diagnostic Workflows
 
 Systematic procedures for diagnosing common infrastructure issues. All commands are read-only.
+
+## When to Use
+
+Use this skill when you need to diagnose:
+- Pod crashes (CrashLoopBackOff, OOMKilled, ImagePullBackOff)
+- Pending pods that won't schedule
+- Node issues (NotReady, resource pressure)
+- Deployment problems (unavailable replicas, stuck rollouts)
+- Scaling issues (HPA, KEDA)
+- Service connectivity problems
 
 ## Pod Crash Diagnosis
 
@@ -349,4 +344,4 @@ When completing a diagnosis, report:
 
 ---
 
-**Note**: All commands in this workflow are read-only. The safety hook blocks any write operations.
+**Important**: All commands in this workflow are read-only. Write operations should be blocked by a safety hook in production agent environments.

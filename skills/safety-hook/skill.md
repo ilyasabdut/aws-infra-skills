@@ -1,53 +1,48 @@
 ---
-name: safety-hook
-description: Documents the read-only infrastructure safety hook that blocks dangerous operations
-triggers:
-  - hook
-  - safety
-  - blocked
-  - not allowed
-  - permission
-  - write
-  - delete
-  - modify
+name: Infrastructure Safety Hook
+description: Documents the read-only infrastructure safety hook that blocks dangerous kubectl and AWS operations for AI agents.
 ---
 
-# Safety Hook Documentation
+# Infrastructure Safety Hook
 
-This project includes a pre-command safety hook that blocks dangerous kubectl and AWS operations. The hook ensures agents can only perform read-only investigation.
+This skill documents the pre-command safety hook that blocks dangerous kubectl and AWS operations. The hook ensures AI agents can only perform read-only investigation.
+
+## When to Use
+
+Reference this skill when:
+- A command is blocked and you need to understand why
+- You need to know what operations are allowed vs blocked
+- Setting up the hook in a new environment
+- Troubleshooting hook behavior
 
 ## How It Works
 
-The TypeScript extension (`.omp/extensions/readonly-infra-hook.ts`) intercepts `bash` tool calls and:
+The hook intercepts bash commands and:
 
 1. Parses the command
 2. Checks against allowlists (kubectl) and blocklists (AWS)
-3. Returns `{ block: true, reason: "..." }` to block, or allows execution
-4. Provides helpful alternatives when blocking
+3. Blocks dangerous operations with a helpful message
+4. Allows read-only operations to proceed
 
-## How It's Loaded
+## Installation
 
-### omp (automatic)
+### For Claude (claude.ai)
 
-The extension auto-loads when omp starts in this project directory. No configuration needed.
+Copy the `readonly-infra-hook.sh` script to your project and reference it in your CLAUDE.md or system instructions.
 
-omp discovers extensions from:
-1. Project: `<cwd>/.omp/extensions/`
-2. User: `~/.omp/agent/extensions/`
+### For Claude Code / omp
 
-### Claude Code
-
-Claude Code doesn't use omp extensions. For Claude Code, reference the bash script in your configuration or CLAUDE.md rules.
+Place the extension in your project's `.omp/extensions/` directory or user's `~/.omp/agent/extensions/`. It auto-loads on session start.
 
 ### Manual Testing
 
 ```bash
 # Test that dangerous commands are blocked
-.omp/hooks/readonly-infra.sh kubectl delete pod test
+./readonly-infra-hook.sh kubectl delete pod test
 # Should output: BLOCKED: kubectl delete is a write operation...
 
 # Test that safe commands are allowed
-.omp/hooks/readonly-infra.sh kubectl get pods -n default
+./readonly-infra-hook.sh kubectl get pods -n default
 # Should exit 0 (no output)
 ```
 
@@ -133,17 +128,17 @@ Read operations are generally allowed:
 When a command is blocked, you'll see a helpful message:
 
 ```
-Blocked: kubectl delete is a write operation.
+BLOCKED: kubectl delete is a write operation.
 For investigation, use: kubectl get, kubectl describe, kubectl logs
 ```
 
 ```
-Blocked: kubectl exec allows arbitrary code execution in containers.
+BLOCKED: kubectl exec allows arbitrary code execution in containers.
 To see container output, use: kubectl logs <pod> -n <namespace>
 ```
 
 ```
-Blocked: aws iam operations are not permitted.
+BLOCKED: aws iam operations are not permitted.
 This agent has read-only infrastructure access.
 ```
 
