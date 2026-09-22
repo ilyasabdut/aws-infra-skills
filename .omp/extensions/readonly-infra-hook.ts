@@ -10,6 +10,12 @@
  * - IAM operations entirely
  * - Credential extraction attempts (env, printenv, proc environ)
  * - SDK bypass attempts (python boto3, curl to AWS APIs)
+ *
+ * Hooks `eval` tool calls (Python) and blocks:
+ * - boto3 imports and client creation (AWS SDK bypass)
+ * - kubernetes client imports and API instantiation
+ * - AWS credential access via os.environ
+ * - subprocess calls to aws/kubectl
  */
 
 import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
@@ -87,6 +93,71 @@ interface BlockResult {
 
 export default function readonlyInfraHook(pi: ExtensionAPI): void {
 	pi.on("tool_call", async (event) => {
+		// ========== EVAL KERNEL BYPASS PROTECTION ==========
+		if (event.toolName === "eval") {
+			const input = event.input as { language?: string; code?: string };
+			if (input.language === "py" && input.code) {
+				const code = input.code;
+
+				// Block boto3 usage (AWS SDK bypass)
+				if (/import\s+boto3/.test(code) || /from\s+boto3\s+import/.test(code)) {
+					return {
+						block: true,
+						reason: `Blocked: boto3 import in eval kernel is not permitted.\nUse aws CLI for allowed read operations.`,
+					} satisfies BlockResult;
+				}
+
+				// Block direct boto3 client/resource calls (in case already imported)
+				if (/boto3\.(client|resource|Session)\s*\(/.test(code)) {
+					return {
+						block: true,
+						reason: `Blocked: boto3 client/resource creation is not permitted.\nUse aws CLI for allowed read operations.`,
+					} satisfies BlockResult;
+				}
+
+				// Block kubernetes client usage
+				if (/import\s+kubernetes/.test(code) || /from\s+kubernetes\s+import/.test(code)) {
+					return {
+						block: true,
+						reason: `Blocked: kubernetes client import in eval kernel is not permitted.\nUse kubectl CLI for allowed read operations.`,
+					} satisfies BlockResult;
+				}
+
+				// Block kubernetes client API instantiation
+				if (/client\.(CoreV1Api|AppsV1Api|BatchV1Api|NetworkingV1Api|RbacAuthorizationV1Api)\s*\(/.test(code)) {
+					return {
+						block: true,
+						reason: `Blocked: kubernetes API client creation is not permitted.\nUse kubectl CLI for allowed read operations.`,
+					} satisfies BlockResult;
+				}
+
+				// Block config.load for kubernetes
+				if (/config\.load_(kube_config|incluster_config)\s*\(/.test(code)) {
+					return {
+						block: true,
+						reason: `Blocked: kubernetes config loading is not permitted.\nUse kubectl CLI for allowed read operations.`,
+					} satisfies BlockResult;
+				}
+
+				// Block AWS credential access via os.environ
+				if (/os\.environ\s*\[\s*['"]AWS_(SECRET_ACCESS_KEY|SESSION_TOKEN|ACCESS_KEY_ID)['"]\s*\]/.test(code)) {
+					return {
+						block: true,
+						reason: `Blocked: AWS credential access via os.environ is not permitted.`,
+					} satisfies BlockResult;
+				}
+
+				// Block subprocess calls to aws/kubectl (bypass via subprocess)
+				if (/subprocess\.(run|call|Popen|check_output)\s*\(\s*\[?\s*['"]?(aws|kubectl)/.test(code)) {
+					return {
+						block: true,
+						reason: `Blocked: subprocess calls to aws/kubectl bypass the safety hook.\nUse the bash tool instead.`,
+					} satisfies BlockResult;
+				}
+			}
+			return; // Allow other eval calls
+		}
+
 		// Only intercept bash tool calls
 		if (event.toolName !== "bash") return;
 
