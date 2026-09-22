@@ -55,9 +55,14 @@ The `safety-hook` skill includes a bash script (`readonly-infra.sh`) that blocks
 3. Configure your agent to run commands through it
 
 The hook blocks:
-- `kubectl delete`, `apply`, `exec`, `scale`, etc.
-- `aws iam *`, `aws * delete-*`, `aws * terminate-*`, etc.
-- Credential inspection (`env`, `printenv`, etc.)
+- `kubectl delete`, `apply`, `exec`, `scale`, `edit`, `patch`, `drain`, etc.
+- `aws iam *`, `aws * delete-*`, `aws * terminate-*`, `aws * create-*`, etc.
+- IaC tools: `terraform`, `pulumi`, `eksctl`, `helm`
+- Shell indirection: `bash -c`, `sh -c`, `eval` with dangerous commands
+- Command/process substitution: `$(...)`, `` `...` ``, `<(...)` with dangerous commands
+- Pipe/xargs bypass: `| kubectl`, `xargs aws` with mutation verbs
+- SDK bypass: `python boto3`, `node @aws-sdk`, `curl amazonaws`
+- Credential inspection: `env`, `printenv`, `declare -x`, `export -p`
 
 ## Requirements
 
