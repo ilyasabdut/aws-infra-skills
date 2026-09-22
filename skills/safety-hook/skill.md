@@ -107,9 +107,15 @@ Read operations are generally allowed:
 | **Compute** | `run-instances`, `run-task` | Instance/task launch |
 | **Execution** | `execute-` | Code/SQL execution |
 | **Configuration** | `set-`, `reset-` | Configuration changes |
-| **Recovery** | `restore-`, `failover-`, `promote-`, `revert-` | DR operations |
+| **Recovery** | `restore-`, `failover-`, `promote-`, `revert-`, `switchover-` | DR operations |
 | **Movement** | `move-` | Resource movement |
 | **Batch** | `batch-write-`, `batch-delete-`, `batch-put-` | DynamoDB batch mutations |
+| **Replacement** | `replace-` | Route/ACL replacement |
+| **Provisioning** | `request-`, `purchase-` | Spot/reserved instances |
+| **Assignment** | `assign-`, `unassign-` | IP address assignment |
+| **Submission** | `submit-`, `apply-` | State/maintenance changes |
+| **Packaging** | `bundle-` | Instance bundling |
+| **Confirmation** | `confirm-` | Product confirmation |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
