@@ -1,0 +1,22 @@
+name: Test Hook
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run hook tests
+        run: ./test-hook.sh
+
+      - name: Validate TypeScript extension
+        run: |
+          npm install -g bun
+          bun build --no-bundle --target=node .omp/extensions/readonly-infra-hook.ts --outdir=/tmp/hook-check
+          echo "TypeScript extension compiles successfully"
