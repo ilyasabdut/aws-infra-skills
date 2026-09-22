@@ -104,6 +104,9 @@ The safety hook is optimized for minimal latency (~5ms per command check). Optim
 - `xargs aws/kubectl` and `| aws/kubectl` with mutation verbs
 - `$(dangerous)` and `` `dangerous` `` command substitution
 - `<(dangerous)` process substitution
+- `<<< "dangerous"` here-string, `<<EOF dangerous EOF` heredoc
+- `cmd; kubectl delete` / `cmd && aws iam` / `cmd || dangerous` chained commands
+- Multiline scripts with dangerous commands after newlines
 - `curl`/`wget` to `*.amazonaws.com`
 - `node`/`bun` with `@aws-sdk`
 - `declare -x`, `export -p` (environment inspection)
