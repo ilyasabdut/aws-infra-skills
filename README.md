@@ -1,5 +1,9 @@
 # Read-Only Infrastructure Agent
 
+[![Test Hook](https://github.com/ilyasabdut/aws-infra-skills/actions/workflows/test.yml/badge.svg)](https://github.com/ilyasabdut/aws-infra-skills/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/ilyasabdut/aws-infra-skills)](https://github.com/ilyasabdut/aws-infra-skills/releases)
+
 AI agent skills and safety hook for read-only AWS/Kubernetes infrastructure investigation.
 
 ## Overview
