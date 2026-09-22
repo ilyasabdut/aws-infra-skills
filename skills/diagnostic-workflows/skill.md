@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -34,6 +34,8 @@ Use this skill when you need to diagnose:
 - CodeBuild build failures
 - CodePipeline execution failures
 - EventBridge rules not triggering
+- Cognito authentication issues
+- OpenSearch cluster health issues
 
 ## Pod Crash Diagnosis
 
@@ -1087,6 +1089,121 @@ aws events list-rules --event-bus-name <event-bus-name> --name-prefix <rule-pref
 - Target IAM role missing permissions
 - Target (Lambda/SQS/etc) returning errors
 - Using wrong event bus (default vs custom)
+
+### Cognito Authentication Issues
+
+```bash
+# 1. Check user pool status
+aws cognito-idp describe-user-pool --user-pool-id <user-pool-id> \
+  --query 'UserPool.{Status:Status,Name:Name,MfaConfiguration:MfaConfiguration}'
+
+# 2. Check user status
+aws cognito-idp admin-get-user --user-pool-id <user-pool-id> --username <username> \
+  --query '{Status:UserStatus,Enabled:Enabled,MFA:MFAOptions}'
+
+# 3. Check app client configuration
+aws cognito-idp describe-user-pool-client \
+  --user-pool-id <user-pool-id> \
+  --client-id <client-id> \
+  --query 'UserPoolClient.{Name:ClientName,TokenValidity:AccessTokenValidity,AuthFlows:ExplicitAuthFlows}'
+
+# 4. Check sign-in failures (CloudWatch)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Cognito \
+  --metric-name SignInSuccesses \
+  --dimensions Name=UserPool,Value=<user-pool-id> Name=UserPoolClient,Value=<client-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Sum
+
+# 5. Check token generation failures
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Cognito \
+  --metric-name TokenRefreshSuccesses \
+  --dimensions Name=UserPool,Value=<user-pool-id> Name=UserPoolClient,Value=<client-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Sum
+
+# 6. Check identity pool (if using federated identities)
+aws cognito-identity describe-identity-pool --identity-pool-id <identity-pool-id>
+```
+
+**Likely causes:**
+- User not confirmed or disabled
+- Incorrect client ID or secret
+- Auth flow not enabled for app client
+- Token expired (check validity settings)
+- MFA required but not provided
+- Lambda trigger failing (pre-auth, post-auth)
+
+### OpenSearch Cluster Health Issues
+
+```bash
+# 1. Check domain status
+aws opensearch describe-domain --domain-name <domain-name> \
+  --query 'DomainStatus.{Processing:Processing,Created:Created,Deleted:Deleted,Endpoint:Endpoint}'
+
+# 2. Check cluster health (via CloudWatch)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ES \
+  --metric-name ClusterStatus.green \
+  --dimensions Name=DomainName,Value=<domain-name> Name=ClientId,Value=<account-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Minimum
+
+# 3. Check free storage space
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ES \
+  --metric-name FreeStorageSpace \
+  --dimensions Name=DomainName,Value=<domain-name> Name=ClientId,Value=<account-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Minimum
+
+# 4. Check JVM memory pressure
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ES \
+  --metric-name JVMMemoryPressure \
+  --dimensions Name=DomainName,Value=<domain-name> Name=ClientId,Value=<account-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Maximum
+
+# 5. Check CPU utilization
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ES \
+  --metric-name CPUUtilization \
+  --dimensions Name=DomainName,Value=<domain-name> Name=ClientId,Value=<account-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average Maximum
+
+# 6. Check indexing rate
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ES \
+  --metric-name IndexingRate \
+  --dimensions Name=DomainName,Value=<domain-name> Name=ClientId,Value=<account-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+```
+
+**Likely causes:**
+- Cluster status yellow/red (replica issues, node failure)
+- Storage full (< 20% free triggers issues)
+- JVM memory pressure > 80% (GC overhead, OOM risk)
+- CPU saturation from heavy queries
+- Too many shards for cluster size
+- Network connectivity (VPC, security group)
 
 ## Standard Diagnosis Output Format
 
