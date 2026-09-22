@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas, Redshift, Athena, Glue, EMR, Backup, Cost Explorer) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -49,6 +49,12 @@ Use this skill when you need to diagnose:
 - CloudTrail event investigation
 - EFS mount/performance issues
 - Service quotas/limits issues
+- Redshift cluster issues
+- Athena query failures
+- Glue job failures
+- EMR cluster/step failures
+- Backup job failures
+- Cost anomaly investigation
 
 ## Pod Crash Diagnosis
 
@@ -1766,6 +1772,256 @@ aws cloudwatch describe-alarms --alarm-name-prefix "ServiceQuota" \
 - Service not supported in region
 - Account-level limits (new accounts have lower limits)
 - Resource-specific limits (e.g., rules per security group)
+
+### Redshift Cluster Issues
+
+```bash
+# 1. Check cluster status
+aws redshift describe-clusters --cluster-identifier <cluster-id> \
+  --query 'Clusters[].{Id:ClusterIdentifier,Status:ClusterStatus,AZ:AvailabilityZone,Nodes:NumberOfNodes,Type:NodeType}'
+
+# 2. Check cluster health
+aws redshift describe-clusters --cluster-identifier <cluster-id> \
+  --query 'Clusters[].{Encrypted:Encrypted,PubliclyAccessible:PubliclyAccessible,Endpoint:Endpoint.Address,Port:Endpoint.Port}'
+
+# 3. Check recent snapshots
+aws redshift describe-cluster-snapshots --cluster-identifier <cluster-id> --max-records 5 \
+  --query 'Snapshots[].{Id:SnapshotIdentifier,Status:Status,Type:SnapshotType,Created:SnapshotCreateTime}'
+
+# 4. Check cluster parameter group
+aws redshift describe-cluster-parameters --parameter-group-name <param-group> \
+  --query 'Parameters[?ParameterValue!=`default`].{Name:ParameterName,Value:ParameterValue}'
+
+# 5. Check resize status
+aws redshift describe-cluster --cluster-identifier <cluster-id> \
+  --query 'Clusters[].{ResizeStatus:ResizeInfo.ResizeType,AllowCancelResize:ResizeInfo.AllowCancelResize}'
+
+# 6. Check CloudWatch metrics for disk space
+aws cloudwatch get-metric-statistics --namespace AWS/Redshift --metric-name PercentageDiskSpaceUsed \
+  --dimensions Name=ClusterIdentifier,Value=<cluster-id> --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) --period 300 --statistics Average
+
+# 7. Check query performance (via CloudWatch)
+aws cloudwatch get-metric-statistics --namespace AWS/Redshift --metric-name QueryDuration \
+  --dimensions Name=ClusterIdentifier,Value=<cluster-id> --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) --period 300 --statistics Average
+```
+
+**Likely causes:**
+- Cluster in modifying/resizing state
+- Disk space > 80% (performance degrades)
+- Node failure (check cluster events)
+- WLM queue configuration issues
+- Maintenance window running
+- Snapshot in progress affecting performance
+- Network/security group blocking connections
+
+### Athena Query Failures
+
+```bash
+# 1. Get query execution details
+aws athena get-query-execution --query-execution-id <query-id> \
+  --query 'QueryExecution.{State:Status.State,Reason:Status.StateChangeReason,DataScanned:Statistics.DataScannedInBytes,Runtime:Statistics.EngineExecutionTimeInMillis}'
+
+# 2. List recent query executions
+aws athena list-query-executions --work-group <workgroup> --max-results 10
+
+# 3. Get query results location
+aws athena get-work-group --work-group <workgroup> \
+  --query 'WorkGroup.Configuration.ResultConfiguration.OutputLocation'
+
+# 4. Check workgroup configuration
+aws athena get-work-group --work-group <workgroup> \
+  --query 'WorkGroup.{State:State,BytesScannedCutoff:Configuration.BytesScannedCutoffPerQuery,EnforceWorkGroup:Configuration.EnforceWorkGroupConfiguration}'
+
+# 5. List data catalogs
+aws athena list-data-catalogs --query 'DataCatalogsSummary[].{Name:CatalogName,Type:Type}'
+
+# 6. Get table metadata (from Glue catalog)
+aws glue get-table --database-name <database> --name <table> \
+  --query 'Table.{Location:StorageDescriptor.Location,Format:StorageDescriptor.InputFormat,Columns:StorageDescriptor.Columns[].Name}'
+
+# 7. Check Athena error patterns in query history
+aws athena list-query-executions --work-group <workgroup> --max-results 20 | \
+  xargs -I {} aws athena get-query-execution --query-execution-id {} --query 'QueryExecution.Status.{State:State,Reason:StateChangeReason}' 2>/dev/null
+```
+
+**Likely causes:**
+- S3 access denied (bucket policy, IAM)
+- Malformed data in S3 (schema mismatch)
+- Query timeout (large dataset, no partitions)
+- Workgroup bytes scanned limit exceeded
+- Results bucket doesn't exist or inaccessible
+- Glue catalog permissions
+- MSCK REPAIR TABLE needed (new partitions)
+
+### Glue Job Failures
+
+```bash
+# 1. Get job run details
+aws glue get-job-run --job-name <job-name> --run-id <run-id> \
+  --query 'JobRun.{State:JobRunState,Error:ErrorMessage,Started:StartedOn,Completed:CompletedOn,DPUs:AllocatedCapacity}'
+
+# 2. List recent job runs
+aws glue get-job-runs --job-name <job-name> --max-results 10 \
+  --query 'JobRuns[].{RunId:Id,State:JobRunState,Started:StartedOn,Duration:ExecutionTime}'
+
+# 3. Get job definition
+aws glue get-job --job-name <job-name> \
+  --query 'Job.{Role:Role,Workers:NumberOfWorkers,WorkerType:WorkerType,Timeout:Timeout,MaxRetries:MaxRetries}'
+
+# 4. Check job bookmarks
+aws glue get-job-bookmark --job-name <job-name> \
+  --query 'JobBookmarkEntry.{Run:Run,Attempt:Attempt,Version:Version}'
+
+# 5. List triggers for the job
+aws glue get-triggers --query "Triggers[?Actions[?JobName=='<job-name>']].{Name:Name,State:State,Type:Type}"
+
+# 6. Check crawler status (if data source)
+aws glue get-crawler --name <crawler-name> \
+  --query 'Crawler.{State:State,LastCrawl:LastCrawl.Status,TablesCreated:LastCrawl.TablesCreated}'
+
+# 7. Get CloudWatch logs for failed job
+aws logs filter-log-events --log-group-name /aws-glue/jobs/error \
+  --filter-pattern "<job-name>" --start-time $(date -u -v-1H +%s)000 --limit 20
+```
+
+**Likely causes:**
+- IAM role missing permissions (S3, Glue catalog, KMS)
+- Out of memory (increase DPUs/worker type)
+- Timeout exceeded (increase timeout or optimize)
+- S3 path doesn't exist
+- Schema evolution issues
+- Job bookmark corruption (reset bookmark)
+- Python/Spark dependency conflicts
+
+### EMR Cluster/Step Failures
+
+```bash
+# 1. Check cluster status
+aws emr describe-cluster --cluster-id <cluster-id> \
+  --query 'Cluster.{State:Status.State,Reason:Status.StateChangeReason.Message,Created:Status.Timeline.CreationDateTime}'
+
+# 2. List cluster steps
+aws emr list-steps --cluster-id <cluster-id> \
+  --query 'Steps[].{Id:Id,Name:Name,State:Status.State,Reason:Status.FailureDetails.Reason}'
+
+# 3. Get step details
+aws emr describe-step --cluster-id <cluster-id> --step-id <step-id> \
+  --query 'Step.{Name:Name,State:Status.State,FailureReason:Status.FailureDetails.Reason,LogFile:Status.FailureDetails.LogFile}'
+
+# 4. List instances in cluster
+aws emr list-instances --cluster-id <cluster-id> \
+  --query 'Instances[].{Id:Ec2InstanceId,Type:InstanceType,State:Status.State,Group:InstanceGroupId}'
+
+# 5. Check instance groups
+aws emr list-instance-groups --cluster-id <cluster-id> \
+  --query 'InstanceGroups[].{Name:Name,Type:InstanceGroupType,Running:RunningInstanceCount,Requested:RequestedInstanceCount,State:Status.State}'
+
+# 6. Get bootstrap action logs location
+aws emr describe-cluster --cluster-id <cluster-id> \
+  --query 'Cluster.{LogUri:LogUri,Applications:Applications[].Name}'
+
+# 7. Check cluster events
+aws emr list-clusters --cluster-states TERMINATED_WITH_ERRORS --created-after $(date -u -v-24H +%Y-%m-%dT%H:%M:%SZ) \
+  --query 'Clusters[].{Id:Id,Name:Name,State:Status.State,Reason:Status.StateChangeReason.Message}'
+```
+
+**Likely causes:**
+- Bootstrap action failed (check logs in S3)
+- Spot instance termination
+- Insufficient capacity in AZ
+- Step script error (check stderr in S3 logs)
+- YARN resource exhaustion
+- S3 access permissions
+- Security group blocking required ports
+- EMR-managed security group rules insufficient
+
+### AWS Backup Job Failures
+
+```bash
+# 1. Get backup job details
+aws backup describe-backup-job --backup-job-id <job-id> \
+  --query '{State:State,Status:StatusMessage,ResourceArn:ResourceArn,Created:CreationDate,Completed:CompletionDate,Size:BackupSizeInBytes}'
+
+# 2. List recent backup jobs
+aws backup list-backup-jobs --by-state FAILED --max-results 10 \
+  --query 'BackupJobs[].{JobId:BackupJobId,Resource:ResourceArn,State:State,Message:StatusMessage}'
+
+# 3. Check backup vault
+aws backup describe-backup-vault --backup-vault-name <vault-name> \
+  --query '{Name:BackupVaultName,Encrypted:EncryptionKeyArn,RecoveryPoints:NumberOfRecoveryPoints}'
+
+# 4. Check backup plan
+aws backup get-backup-plan --backup-plan-id <plan-id> \
+  --query 'BackupPlan.{Name:BackupPlanName,Rules:Rules[].{Name:RuleName,Schedule:ScheduleExpression,Lifecycle:Lifecycle}}'
+
+# 5. List protected resources
+aws backup list-protected-resources --max-results 20 \
+  --query 'Results[].{Arn:ResourceArn,Type:ResourceType,LastBackup:LastBackupTime}'
+
+# 6. Check restore jobs (if restore failed)
+aws backup list-restore-jobs --by-status FAILED --max-results 10 \
+  --query 'RestoreJobs[].{JobId:RestoreJobId,Status:Status,Message:StatusMessage,Created:CreationDate}'
+
+# 7. Get backup selection (what's being backed up)
+aws backup list-backup-selections --backup-plan-id <plan-id> \
+  --query 'BackupSelectionsList[].{Id:SelectionId,Name:SelectionName}'
+```
+
+**Likely causes:**
+- IAM role missing permissions for resource type
+- KMS key permissions for encrypted resources
+- Resource in invalid state (e.g., RDS in maintenance)
+- Backup vault policy denying access
+- Cross-region/cross-account permissions missing
+- Resource doesn't support AWS Backup
+- Lifecycle policy conflicts
+- Concurrent backup limit reached
+
+### Cost Explorer Anomaly Investigation
+
+```bash
+# 1. Get cost and usage for recent days
+aws ce get-cost-and-usage --time-period Start=$(date -u -v-7d +%Y-%m-%d),End=$(date -u +%Y-%m-%d) \
+  --granularity DAILY --metrics UnblendedCost \
+  --query 'ResultsByTime[].{Date:TimePeriod.Start,Cost:Total.UnblendedCost.Amount}'
+
+# 2. Get cost by service
+aws ce get-cost-and-usage --time-period Start=$(date -u -v-7d +%Y-%m-%d),End=$(date -u +%Y-%m-%d) \
+  --granularity DAILY --metrics UnblendedCost --group-by Type=DIMENSION,Key=SERVICE \
+  --query 'ResultsByTime[].Groups[].{Service:Keys[0],Cost:Metrics.UnblendedCost.Amount}' | head -50
+
+# 3. Get cost by linked account (for Organizations)
+aws ce get-cost-and-usage --time-period Start=$(date -u -v-7d +%Y-%m-%d),End=$(date -u +%Y-%m-%d) \
+  --granularity DAILY --metrics UnblendedCost --group-by Type=DIMENSION,Key=LINKED_ACCOUNT
+
+# 4. Check for cost anomalies
+aws ce get-anomalies --date-interval StartDate=$(date -u -v-30d +%Y-%m-%d),EndDate=$(date -u +%Y-%m-%d) \
+  --max-results 10 --query 'Anomalies[].{Id:AnomalyId,Score:AnomalyScore.CurrentScore,Impact:Impact.TotalImpact}'
+
+# 5. Get anomaly details
+aws ce get-anomalies --anomaly-ids <anomaly-id> \
+  --query 'Anomalies[].{Service:RootCauses[0].Service,Region:RootCauses[0].Region,Account:RootCauses[0].LinkedAccount}'
+
+# 6. Check savings plans utilization
+aws ce get-savings-plans-utilization --time-period Start=$(date -u -v-7d +%Y-%m-%d),End=$(date -u +%Y-%m-%d) \
+  --query 'Total.{Utilization:UtilizationPercentage,Savings:NetSavings}'
+
+# 7. Get reservation utilization
+aws ce get-reservation-utilization --time-period Start=$(date -u -v-30d +%Y-%m-%d),End=$(date -u +%Y-%m-%d) \
+  --query 'Total.{Utilization:UtilizationPercentage,Hours:TotalActualHours}'
+```
+
+**Likely causes:**
+- Unused/underutilized resources (idle EC2, unattached EBS)
+- Data transfer costs (cross-region, NAT gateway)
+- Forgotten resources in non-production accounts
+- Savings plans/reservations not covering usage
+- S3 storage class not optimized
+- Lambda over-provisioned memory
+- RDS/Redshift oversized instances
+- CloudWatch logs retention too long
 
 ## Standard Diagnosis Output Format
 
