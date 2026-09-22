@@ -469,6 +469,26 @@ export default function readonlyInfraHook(pi: ExtensionAPI): void {
 			}
 		}
 
+		// ========== COMMAND SUBSTITUTION BLOCKING ==========
+		if (/\$\(/.test(command) || /`/.test(command)) {
+			if (/kubectl\s+(delete|apply|exec|scale)/.test(command) ||
+				/aws\s+iam/.test(command) ||
+				/(terminate-|delete-cluster|create-|modify-)/.test(command)) {
+				return {
+					block: true,
+					reason: `Blocked: Command substitution with dangerous commands is not permitted.\nUse allowed commands directly.`,
+				} satisfies BlockResult;
+			}
+		}
+
+		// ========== ENVIRONMENT INSPECTION BLOCKING ==========
+		if (/\bdeclare\s+-[^\s]*x/.test(command) || /\bexport\s+-p/.test(command)) {
+			return {
+				block: true,
+				reason: `Blocked: Environment inspection is not permitted (protects credentials).`,
+			} satisfies BlockResult;
+		}
+
 		// Command allowed
 		return;
 	});
