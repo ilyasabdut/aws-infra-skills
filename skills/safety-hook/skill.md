@@ -154,6 +154,15 @@ Read operations are generally allowed:
 | `<<< "kubectl delete..."` | Here-string bypass |
 | `<<EOF kubectl delete EOF` | Heredoc bypass |
 
+### Chained Command Blocking
+
+| Pattern | Reason |
+|---------|--------|
+| `cmd; kubectl delete...` | Semicolon chaining |
+| `cmd && kubectl delete...` | AND chaining |
+| `cmd \|\| kubectl delete...` | OR chaining |
+| `cmd\nkubectl delete...` | Newline chaining |
+
 ### Environment Inspection Blocking
 
 | Pattern | Reason |
