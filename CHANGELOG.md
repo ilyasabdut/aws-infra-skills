@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-09-22
+
+### Added
+- **aws-investigation skill**: ECS investigation (clusters, services, tasks, task definitions, container insights)
+- **aws-investigation skill**: DynamoDB investigation (tables, capacity metrics, throttling, GSI status)
+- **aws-investigation skill**: API Gateway investigation (REST/HTTP APIs, stages, deployments, error/latency metrics)
+- **aws-investigation skill**: ElastiCache investigation (Redis/Memcached clusters, node status, memory/eviction metrics)
+
+### Tests
+- Control flow edge case tests (function definitions, while/for loops with dangerous commands)
+- Extended test suite from 52 to 55 tests
+
 ## [1.4.1] - 2026-09-22
 
 ### Added
@@ -168,6 +180,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.5.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.8...v1.4.0
 [1.3.8]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.7...v1.3.8
