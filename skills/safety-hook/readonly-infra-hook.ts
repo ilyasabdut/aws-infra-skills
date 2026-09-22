@@ -123,6 +123,8 @@ const AWS_MUTATION_VERBS = [
 	// Provisioning
 	"request-",
 	"purchase-",
+	"provision-",
+	"deprovision-",
 	// Assignment
 	"assign-",
 	"unassign-",
@@ -139,6 +141,9 @@ const AWS_MUTATION_VERBS = [
 	// Locking
 	"lock-",
 	"unlock-",
+	// BYOIP
+	"advertise-",
+	"withdraw-",
 	// Other
 	"add-",
 	"write-",
