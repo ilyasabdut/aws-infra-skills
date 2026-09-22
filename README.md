@@ -93,6 +93,12 @@ The safety hook is optimized for minimal latency (~5ms per command check). Optim
 - `aws s3 rm`, `aws s3 cp ... s3://` (upload)
 - `env`, `printenv` (credential protection)
 
+### Blocked (eval kernel bypass)
+- `import boto3` / `from boto3 import` in Python eval
+- `import kubernetes` / kubernetes client API instantiation
+- `os.environ["AWS_SECRET_ACCESS_KEY"]` access
+- `subprocess.run(["kubectl", ...])` / `subprocess.run(["aws", ...])`
+
 ## Example Usage
 
 Once skills are installed, ask Claude:
