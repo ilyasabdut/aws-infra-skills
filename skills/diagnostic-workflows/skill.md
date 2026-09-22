@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -31,6 +31,9 @@ Use this skill when you need to diagnose:
 - ElastiCache connection and performance
 - Step Functions execution failures
 - Kinesis stream throughput issues
+- CodeBuild build failures
+- CodePipeline execution failures
+- EventBridge rules not triggering
 
 ## Pod Crash Diagnosis
 
@@ -973,6 +976,117 @@ aws kinesis list-shards --stream-name <stream-name>
 - Consumer not keeping up (high iterator age)
 - Multiple consumers exceeding read throughput
 - Record size exceeding 1 MB limit
+
+### CodeBuild Build Failures
+
+```bash
+# 1. List recent failed builds
+aws codebuild list-builds-for-project --project-name <project-name> \
+  --sort-order DESCENDING --max-items 10 | \
+  xargs -I {} aws codebuild batch-get-builds --ids {} \
+  --query 'builds[?buildStatus==`FAILED`].{Id:id,Phase:currentPhase,Status:buildStatus}'
+
+# 2. Get build details
+aws codebuild batch-get-builds --ids <build-id> \
+  --query 'builds[].{Status:buildStatus,Phase:currentPhase,StartTime:startTime,EndTime:endTime}'
+
+# 3. Get build phases (find which phase failed)
+aws codebuild batch-get-builds --ids <build-id> \
+  --query 'builds[].phases[?phaseStatus==`FAILED`]'
+
+# 4. Check build logs
+aws logs filter-log-events \
+  --log-group-name /aws/codebuild/<project-name> \
+  --filter-pattern "?error ?Error ?ERROR ?failed ?Failed ?FAILED" \
+  --limit 50
+
+# 5. Check project configuration
+aws codebuild batch-get-projects --names <project-name> \
+  --query 'projects[].{Source:source.type,Compute:environment.computeType,Image:environment.image}'
+```
+
+**Likely causes:**
+- Build command failed (check buildspec.yml)
+- Missing environment variables or secrets
+- Dependency download failed (network/permissions)
+- Insufficient compute resources (timeout)
+- Docker build issues (if using custom image)
+
+### CodePipeline Execution Failures
+
+```bash
+# 1. Get pipeline state
+aws codepipeline get-pipeline-state --name <pipeline-name>
+
+# 2. List recent executions
+aws codepipeline list-pipeline-executions --pipeline-name <pipeline-name> --max-results 10
+
+# 3. Get failed execution details
+aws codepipeline get-pipeline-execution \
+  --pipeline-name <pipeline-name> \
+  --pipeline-execution-id <execution-id>
+
+# 4. List action executions (find failed action)
+aws codepipeline list-action-executions \
+  --pipeline-name <pipeline-name> \
+  --filter pipelineExecutionId=<execution-id>
+
+# 5. Check pipeline definition
+aws codepipeline get-pipeline --name <pipeline-name> \
+  --query 'pipeline.stages[].{Name:name,Actions:actions[].name}'
+```
+
+**Likely causes:**
+- Source stage: webhook/polling not triggered, branch not found
+- Build stage: CodeBuild project failed (see above)
+- Deploy stage: IAM permissions, deployment target unhealthy
+- Approval stage: manual approval pending/rejected
+- Action timeout exceeded
+
+### EventBridge Rule Not Triggering
+
+```bash
+# 1. Check rule state
+aws events describe-rule --name <rule-name> \
+  --query '{State:State,Schedule:ScheduleExpression,EventPattern:EventPattern}'
+
+# 2. Check rule targets
+aws events list-targets-by-rule --rule <rule-name>
+
+# 3. Check invocations metric
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Events \
+  --metric-name Invocations \
+  --dimensions Name=RuleName,Value=<rule-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 4. Check failed invocations
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Events \
+  --metric-name FailedInvocations \
+  --dimensions Name=RuleName,Value=<rule-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 5. Check dead-letter queue (if configured)
+aws events describe-rule --name <rule-name> --query 'DeadLetterConfig'
+
+# 6. Check if event bus is correct
+aws events list-rules --event-bus-name <event-bus-name> --name-prefix <rule-prefix>
+```
+
+**Likely causes:**
+- Rule is DISABLED
+- Event pattern doesn't match incoming events
+- Schedule expression syntax error
+- Target IAM role missing permissions
+- Target (Lambda/SQS/etc) returning errors
+- Using wrong event bus (default vs custom)
 
 ## Standard Diagnosis Output Format
 
