@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2026-09-22
+
+### Documentation
+- Updated README with command/process substitution in blocked section
+- Updated skills/README.md with comprehensive hook coverage
+- Updated safety-hook skill with process substitution docs
+
+### Tests
+- Added process substitution test (43 total tests)
+
 ## [1.3.4] - 2026-09-22
 
 ### Added
@@ -105,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.3.5]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.1...v1.3.2
