@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas, Redshift, Athena, Glue, EMR, Backup, Cost Explorer) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas, Redshift, Athena, Glue, EMR, Backup, Cost Explorer, Security Hub, GuardDuty, Inspector) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -55,6 +55,9 @@ Use this skill when you need to diagnose:
 - EMR cluster/step failures
 - Backup job failures
 - Cost anomaly investigation
+- Security Hub finding triage
+- GuardDuty threat investigation
+- Inspector vulnerability investigation
 
 ## Pod Crash Diagnosis
 
@@ -2022,6 +2025,121 @@ aws ce get-reservation-utilization --time-period Start=$(date -u -v-30d +%Y-%m-%
 - Lambda over-provisioned memory
 - RDS/Redshift oversized instances
 - CloudWatch logs retention too long
+
+### Security Hub Finding Triage
+
+```bash
+# 1. Get finding details
+aws securityhub get-findings --filters '{"Id":[{"Value":"<finding-id>","Comparison":"EQUALS"}]}' \
+  --query 'Findings[].{Title:Title,Severity:Severity.Label,Resource:Resources[0],Remediation:Remediation.Recommendation}'
+
+# 2. Check finding source (which service generated it)
+aws securityhub get-findings --filters '{"Id":[{"Value":"<finding-id>","Comparison":"EQUALS"}]}' \
+  --query 'Findings[].{ProductName:ProductName,GeneratorId:GeneratorId,Types:Types}'
+
+# 3. Get related findings for same resource
+aws securityhub get-findings --filters '{"ResourceId":[{"Value":"<resource-arn>","Comparison":"EQUALS"}]}' \
+  --max-results 20 --query 'Findings[].{Title:Title,Severity:Severity.Label,Status:Workflow.Status}'
+
+# 4. Check compliance status if it's a standards finding
+aws securityhub get-findings --filters '{"Id":[{"Value":"<finding-id>","Comparison":"EQUALS"}]}' \
+  --query 'Findings[].Compliance.{Status:Status,RelatedRequirements:RelatedRequirements}'
+
+# 5. Get finding history (workflow status changes)
+aws securityhub get-findings --filters '{"Id":[{"Value":"<finding-id>","Comparison":"EQUALS"}]}' \
+  --query 'Findings[].{Created:CreatedAt,Updated:UpdatedAt,WorkflowStatus:Workflow.Status,RecordState:RecordState}'
+
+# 6. Check if finding is suppressed
+aws securityhub get-findings --filters '{"Id":[{"Value":"<finding-id>","Comparison":"EQUALS"}]}' \
+  --query 'Findings[].{WorkflowStatus:Workflow.Status,Note:Note}'
+```
+
+**Likely causes:**
+- Misconfigured security group (open to 0.0.0.0/0)
+- Unencrypted resource (S3, EBS, RDS)
+- Missing MFA on root account
+- Public S3 bucket
+- IAM policy too permissive
+- Missing logging (CloudTrail, VPC Flow Logs)
+- Outdated TLS version
+- Default VPC in use
+
+### GuardDuty Threat Investigation
+
+```bash
+# 1. Get finding details
+aws guardduty get-findings --detector-id <detector-id> --finding-ids <finding-id> \
+  --query 'Findings[].{Type:Type,Severity:Severity,Title:Title,Description:Description}'
+
+# 2. Get affected resource details
+aws guardduty get-findings --detector-id <detector-id> --finding-ids <finding-id> \
+  --query 'Findings[].Resource.{Type:ResourceType,Instance:InstanceDetails,AccessKey:AccessKeyDetails}'
+
+# 3. Get actor/threat details
+aws guardduty get-findings --detector-id <detector-id> --finding-ids <finding-id> \
+  --query 'Findings[].Service.{Action:Action,Evidence:Evidence,Count:Count,FirstSeen:EventFirstSeen,LastSeen:EventLastSeen}'
+
+# 4. Check for related findings (same resource)
+aws guardduty list-findings --detector-id <detector-id> \
+  --finding-criteria '{"Criterion":{"resource.instanceDetails.instanceId":{"Eq":["<instance-id>"]}}}' \
+  --max-results 20
+
+# 5. Get remote IP reputation
+aws guardduty get-findings --detector-id <detector-id> --finding-ids <finding-id> \
+  --query 'Findings[].Service.Action.*.RemoteIpDetails.{IP:IpAddressV4,Country:Country,City:City,Org:Organization}'
+
+# 6. Check if archived (false positive marked)
+aws guardduty get-findings --detector-id <detector-id> --finding-ids <finding-id> \
+  --query 'Findings[].Service.Archived'
+```
+
+**Likely causes by finding type:**
+- **Recon:EC2/**: Port scanning, instance enumeration from external IP
+- **UnauthorizedAccess:EC2/**: SSH brute force, RDP brute force, unusual API calls
+- **Trojan:EC2/**: Instance communicating with known C&C server
+- **CryptoCurrency:EC2/**: Crypto mining activity detected
+- **Backdoor:EC2/**: Instance communicating with known malware domain
+- **Behavior:EC2/**: Traffic to unusual port, unusual DNS request
+- **Impact:EC2/**: Bitcoin mining, DoS attack from instance
+- **Stealth:IAM/**: CloudTrail logging disabled, password policy changed
+- **UnauthorizedAccess:IAM/**: Credentials used from unusual location
+
+### Inspector Vulnerability Investigation
+
+```bash
+# 1. Get finding details
+aws inspector2 list-findings --filter-criteria '{"findingArn":[{"comparison":"EQUALS","value":"<finding-arn>"}]}' \
+  --query 'findings[].{Title:title,Severity:severity,Type:type,Status:status,FirstSeen:firstObservedAt,LastSeen:lastObservedAt}'
+
+# 2. Get affected resource
+aws inspector2 list-findings --filter-criteria '{"findingArn":[{"comparison":"EQUALS","value":"<finding-arn>"}]}' \
+  --query 'findings[].resources[].{Id:id,Type:type,Region:region,Tags:tags}'
+
+# 3. Get vulnerability details (for PACKAGE_VULNERABILITY)
+aws inspector2 list-findings --filter-criteria '{"findingArn":[{"comparison":"EQUALS","value":"<finding-arn>"}]}' \
+  --query 'findings[].packageVulnerabilityDetails.{CVE:vulnerabilityId,CVSS:cvss[0].baseScore,Source:source,Package:vulnerablePackages}'
+
+# 4. Get network reachability details (for NETWORK_REACHABILITY)
+aws inspector2 list-findings --filter-criteria '{"findingArn":[{"comparison":"EQUALS","value":"<finding-arn>"}]}' \
+  --query 'findings[].networkReachabilityDetails.{Protocol:protocol,OpenRange:openPortRange,NetworkPath:networkPath}'
+
+# 5. Check other findings for same resource
+aws inspector2 list-findings --filter-criteria '{"resourceId":[{"comparison":"EQUALS","value":"<resource-id>"}]}' \
+  --max-results 20 --query 'findings[].{Title:title,Severity:severity,Type:type}'
+
+# 6. Get fix available status
+aws inspector2 list-findings --filter-criteria '{"findingArn":[{"comparison":"EQUALS","value":"<finding-arn>"}]}' \
+  --query 'findings[].{FixAvailable:fixAvailable,Remediation:remediation}'
+```
+
+**Likely causes:**
+- Outdated OS packages (apt/yum update needed)
+- Vulnerable container image layer
+- Exposed network port with no security group restriction
+- Public ECR repository with vulnerable images
+- Lambda function with vulnerable runtime dependencies
+- Missing patches for known CVEs
+- Network path allows internet access to sensitive port
 
 ## Standard Diagnosis Output Format
 
