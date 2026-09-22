@@ -21,6 +21,9 @@ Use this skill when investigating:
 - SQS queue depth and dead letter queues
 - SNS topics and subscriptions
 - VPC networking and security groups
+- Route53 hosted zones and health checks
+- Secrets Manager secret metadata and rotation status
+- SSM Parameter Store parameters
 - ECS clusters, services, and tasks
 - DynamoDB tables and capacity metrics
 - API Gateway REST/HTTP APIs and errors
