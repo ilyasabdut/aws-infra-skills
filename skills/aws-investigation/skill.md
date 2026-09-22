@@ -1,6 +1,6 @@
 ---
 name: AWS Investigation
-description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, and ACM.
+description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild, CodePipeline, Auto Scaling, ACM, Cognito, OpenSearch, Redshift, and Athena.
 ---
 
 # AWS Investigation Skill
@@ -37,6 +37,10 @@ Use this skill when investigating:
 - CodePipeline executions and stage status
 - Auto Scaling groups and scaling activities
 - ACM certificates and validation status
+- Cognito user pools and identity pools
+- OpenSearch domains and cluster health
+- Redshift clusters and query logs
+- Athena workgroups and query executions
 
 ## Quick Reference
 
@@ -1010,6 +1014,135 @@ aws acm describe-certificate --certificate-arn <cert-arn> \
 ```bash
 aws acm list-certificates --certificate-statuses ISSUED \
   --query 'CertificateSummaryList[?NotAfter<=`2026-10-22`]'
+```
+
+## Cognito Investigation
+
+### User pools
+```bash
+aws cognito-idp list-user-pools --max-results 20
+aws cognito-idp describe-user-pool --user-pool-id <pool-id>
+```
+
+### User pool clients
+```bash
+aws cognito-idp list-user-pool-clients --user-pool-id <pool-id>
+aws cognito-idp describe-user-pool-client --user-pool-id <pool-id> --client-id <client-id>
+```
+
+### Identity pools
+```bash
+aws cognito-identity list-identity-pools --max-results 20
+aws cognito-identity describe-identity-pool --identity-pool-id <pool-id>
+```
+
+### User lookup (by username or email)
+```bash
+aws cognito-idp admin-get-user --user-pool-id <pool-id> --username <username>
+aws cognito-idp list-users --user-pool-id <pool-id> --filter "email = \"user@example.com\""
+```
+
+## OpenSearch Investigation
+
+### List domains
+```bash
+aws opensearch list-domain-names
+aws opensearch describe-domain --domain-name <domain-name>
+```
+
+### Domain health
+```bash
+aws opensearch describe-domain --domain-name <domain-name> \
+  --query 'DomainStatus.{Processing:Processing,ClusterHealth:ClusterConfig}'
+```
+
+### OpenSearch metrics
+```bash
+# Cluster health (red/yellow/green via node count)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ES \
+  --metric-name ClusterStatus.red \
+  --dimensions Name=DomainName,Value=<domain-name> Name=ClientId,Value=<account-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Maximum
+
+# JVM memory pressure
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ES \
+  --metric-name JVMMemoryPressure \
+  --dimensions Name=DomainName,Value=<domain-name> Name=ClientId,Value=<account-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Maximum
+```
+
+## Redshift Investigation
+
+### List clusters
+```bash
+aws redshift describe-clusters
+aws redshift describe-clusters --cluster-identifier <cluster-id>
+```
+
+### Cluster snapshots
+```bash
+aws redshift describe-cluster-snapshots --cluster-identifier <cluster-id>
+```
+
+### Recent queries (via CloudWatch Logs if enabled)
+```bash
+aws logs filter-log-events \
+  --log-group-name /aws/redshift/<cluster-id>/useractivitylog \
+  --limit 50
+```
+
+### Redshift metrics
+```bash
+# CPU utilization
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Redshift \
+  --metric-name CPUUtilization \
+  --dimensions Name=ClusterIdentifier,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Average
+
+# Disk space used
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Redshift \
+  --metric-name PercentageDiskSpaceUsed \
+  --dimensions Name=ClusterIdentifier,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Average
+```
+
+## Athena Investigation
+
+### List workgroups
+```bash
+aws athena list-work-groups
+aws athena get-work-group --work-group <workgroup-name>
+```
+
+### Query executions
+```bash
+# List recent queries
+aws athena list-query-executions --work-group <workgroup-name> --max-results 20
+
+# Query details
+aws athena get-query-execution --query-execution-id <query-id>
+
+# Failed queries
+aws athena batch-get-query-execution --query-execution-ids <id1> <id2> \
+  --query 'QueryExecutions[?Status.State==`FAILED`]'
+```
+
+### Query results location
+```bash
+aws athena get-work-group --work-group <workgroup-name> \
+  --query 'WorkGroup.Configuration.ResultConfiguration.OutputLocation'
 ```
 
 ---
