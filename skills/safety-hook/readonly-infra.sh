@@ -143,16 +143,16 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
     # Block mutation verbs across all services - single combined regex (no loop)
     # Patterns grouped by category:
     #   CRUD: delete-, create-, put-, remove-, update-, modify-
-    #   Lifecycle: terminate-, start-, stop-, reboot-, enable-, disable-
+    #   Lifecycle: terminate-, start-, stop-, reboot-, enable-, disable-, suspend-, resume-
     #   Attachment: attach-, detach-, register-, deregister-, associate-, disassociate-
     #   Security: authorize-, revoke-
     #   Resource: import-, copy-, allocate-, release-, cancel-
     #   Approval: accept-, reject-
     #   Tagging: tag-resource, untag-resource
     #   Messaging: send-, invoke, publish, send-command
-    #   Compute: run- (run-instances, run-task, run-scheduled-instances, run-job-flow)
+    #   Compute: run-
     #   Execution: execute-
-    #   Configuration: set-, reset-
+    #   Configuration: set-, reset-, change-
     #   Recovery: restore-, failover-, promote-, revert-, switchover-
     #   Movement: move-, migrate-
     #   Batch mutations: batch-write-, batch-delete-, batch-put-
@@ -165,8 +165,11 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
     #   Export/Clone: export-, clone-
     #   Locking: lock-, unlock-
     #   BYOIP: advertise-, withdraw-
+    #   Rotation: rotate-, renew-
+    #   Scaling: scale-
+    #   Completion: complete-, abort-
     #   Other: add-, write-
-    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-|send-command|tag-resource|untag-resource|allocate-|release-|accept-|reject-|cancel-|write-|execute-|set-|reset-|restore-|failover-|promote-|revert-|move-|batch-write-|batch-delete-|batch-put-|replace-|request-|purchase-|assign-|unassign-|submit-|apply-|bundle-|confirm-|switchover-|migrate-|export-|clone-|lock-|unlock-|provision-|deprovision-|advertise-|withdraw-) ]]; then
+    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-|send-command|tag-resource|untag-resource|allocate-|release-|accept-|reject-|cancel-|write-|execute-|set-|reset-|restore-|failover-|promote-|revert-|move-|batch-write-|batch-delete-|batch-put-|replace-|request-|purchase-|assign-|unassign-|submit-|apply-|bundle-|confirm-|switchover-|migrate-|export-|clone-|lock-|unlock-|provision-|deprovision-|advertise-|withdraw-|rotate-|renew-|scale-|suspend-|resume-|complete-|abort-|change-) ]]; then
         block "aws $SERVICE mutation operation is not permitted. Read-only: describe-*, list-*, get-*"
     fi
 fi

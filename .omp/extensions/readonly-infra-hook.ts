@@ -70,6 +70,8 @@ const AWS_MUTATION_VERBS = [
 	"reboot-",
 	"enable-",
 	"disable-",
+	"suspend-",
+	"resume-",
 	// Attachment
 	"attach-",
 	"detach-",
@@ -104,6 +106,7 @@ const AWS_MUTATION_VERBS = [
 	// Configuration
 	"set-",
 	"reset-",
+	"change-",
 	// Recovery
 	"restore-",
 	"failover-",
@@ -143,6 +146,14 @@ const AWS_MUTATION_VERBS = [
 	// BYOIP
 	"advertise-",
 	"withdraw-",
+	// Rotation
+	"rotate-",
+	"renew-",
+	// Scaling
+	"scale-",
+	// Completion
+	"complete-",
+	"abort-",
 	// Other
 	"add-",
 	"write-",
