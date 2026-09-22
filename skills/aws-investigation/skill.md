@@ -1,6 +1,6 @@
 ---
 name: AWS Investigation
-description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, and ElastiCache.
+description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache, Step Functions, EventBridge, CloudFront, and WAF.
 ---
 
 # AWS Investigation Skill
@@ -25,6 +25,10 @@ Use this skill when investigating:
 - DynamoDB tables and capacity metrics
 - API Gateway REST/HTTP APIs and errors
 - ElastiCache (Redis/Memcached) clusters and metrics
+- Step Functions executions and state machines
+- EventBridge rules and failed invocations
+- CloudFront distributions and cache invalidations
+- WAF web ACLs and blocked requests
 
 ## Quick Reference
 
@@ -708,6 +712,141 @@ aws cloudwatch get-metric-statistics \
   --namespace AWS/ElastiCache \
   --metric-name Evictions \
   --dimensions Name=CacheClusterId,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+```
+
+## Step Functions Investigation
+
+### List state machines
+```bash
+aws stepfunctions list-state-machines
+aws stepfunctions describe-state-machine --state-machine-arn <arn>
+```
+
+### List executions
+```bash
+# Recent executions
+aws stepfunctions list-executions --state-machine-arn <arn> --max-results 20
+
+# Failed executions
+aws stepfunctions list-executions --state-machine-arn <arn> --status-filter FAILED
+
+# Running executions
+aws stepfunctions list-executions --state-machine-arn <arn> --status-filter RUNNING
+```
+
+### Execution details
+```bash
+aws stepfunctions describe-execution --execution-arn <execution-arn>
+aws stepfunctions get-execution-history --execution-arn <execution-arn>
+```
+
+## EventBridge Investigation
+
+### List event buses
+```bash
+aws events list-event-buses
+aws events describe-event-bus --name <bus-name>
+```
+
+### List rules
+```bash
+aws events list-rules
+aws events list-rules --event-bus-name <bus-name>
+aws events describe-rule --name <rule-name>
+```
+
+### Rule targets
+```bash
+aws events list-targets-by-rule --rule <rule-name>
+```
+
+### Failed invocations (via CloudWatch)
+```bash
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Events \
+  --metric-name FailedInvocations \
+  --dimensions Name=RuleName,Value=<rule-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+```
+
+## CloudFront Investigation
+
+### List distributions
+```bash
+aws cloudfront list-distributions
+aws cloudfront get-distribution --id <distribution-id>
+```
+
+### Distribution config
+```bash
+aws cloudfront get-distribution-config --id <distribution-id>
+```
+
+### Cache invalidations
+```bash
+aws cloudfront list-invalidations --distribution-id <distribution-id>
+aws cloudfront get-invalidation --distribution-id <distribution-id> --id <invalidation-id>
+```
+
+### CloudFront metrics
+```bash
+# Request count
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/CloudFront \
+  --metric-name Requests \
+  --dimensions Name=DistributionId,Value=<distribution-id> Name=Region,Value=Global \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+
+# Error rate
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/CloudFront \
+  --metric-name 5xxErrorRate \
+  --dimensions Name=DistributionId,Value=<distribution-id> Name=Region,Value=Global \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Average
+```
+
+## WAF Investigation
+
+### List web ACLs
+```bash
+# Regional (ALB, API Gateway)
+aws wafv2 list-web-acls --scope REGIONAL --region <region>
+
+# CloudFront (global)
+aws wafv2 list-web-acls --scope CLOUDFRONT --region us-east-1
+```
+
+### Web ACL details
+```bash
+aws wafv2 get-web-acl --name <name> --scope REGIONAL --id <id> --region <region>
+```
+
+### Sampled requests (blocked/allowed)
+```bash
+aws wafv2 get-sampled-requests \
+  --web-acl-arn <web-acl-arn> \
+  --rule-metric-name <rule-metric> \
+  --scope REGIONAL \
+  --time-window StartTime=$(date -u -v-3H +%Y-%m-%dT%H:%M:%SZ),EndTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --max-items 100
+```
+
+### WAF metrics
+```bash
+# Blocked requests
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/WAFV2 \
+  --metric-name BlockedRequests \
+  --dimensions Name=WebACL,Value=<web-acl-name> Name=Region,Value=<region> Name=Rule,Value=ALL \
   --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
   --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
   --period 300 --statistics Sum
