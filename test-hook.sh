@@ -96,6 +96,7 @@ echo "--- Command substitution tests ---"
 test_block "subshell kubectl delete" 'echo $(kubectl delete pod test)'
 test_block "backtick aws iam" 'echo `aws iam list-users`'
 test_block "subshell aws terminate" 'VAR=$(aws ec2 terminate-instances --instance-ids i-123)'
+test_block "process substitution kubectl delete" 'diff <(kubectl delete pod test) <(echo x)'
 
 echo ""
 echo "--- Environment inspection tests ---"
