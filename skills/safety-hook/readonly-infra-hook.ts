@@ -154,6 +154,9 @@ const AWS_MUTATION_VERBS = [
 	// Completion
 	"complete-",
 	"abort-",
+	// Monitoring
+	"monitor-",
+	"unmonitor-",
 	// Other
 	"add-",
 	"write-",
