@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for common Kubernetes and AWS infrastructure issues including pod crashes, node problems, storage/PVC issues, network policies, and EKS cluster health.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, RDS, Lambda, SQS, ALB) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -19,6 +19,11 @@ Use this skill when you need to diagnose:
 - Storage issues (PVC pending, volume mount failures)
 - Network policy blocking traffic
 - DNS resolution failures
+- EKS cluster health
+- RDS connection issues
+- Lambda timeout and cold start problems
+- SQS dead letter queue buildup
+- Load balancer health check failures
 
 ## Pod Crash Diagnosis
 
