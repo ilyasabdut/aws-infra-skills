@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -36,6 +36,9 @@ Use this skill when you need to diagnose:
 - EventBridge rules not triggering
 - Cognito authentication issues
 - OpenSearch cluster health issues
+- ECS service and task issues
+- Auto Scaling group issues
+- SNS delivery issues
 
 ## Pod Crash Diagnosis
 
@@ -1204,6 +1207,123 @@ aws cloudwatch get-metric-statistics \
 - CPU saturation from heavy queries
 - Too many shards for cluster size
 - Network connectivity (VPC, security group)
+
+### ECS Service/Task Issues
+
+```bash
+# 1. Check service status
+aws ecs describe-services --cluster <cluster-name> --services <service-name> \
+  --query 'services[].{Status:status,Running:runningCount,Desired:desiredCount,Pending:pendingCount}'
+
+# 2. Check recent service events
+aws ecs describe-services --cluster <cluster-name> --services <service-name> \
+  --query 'services[].events[:10]'
+
+# 3. List stopped tasks (find failures)
+aws ecs list-tasks --cluster <cluster-name> --service-name <service-name> --desired-status STOPPED --max-items 10
+
+# 4. Describe stopped task (get stop reason)
+aws ecs describe-tasks --cluster <cluster-name> --tasks <task-arn> \
+  --query 'tasks[].{StopCode:stopCode,StoppedReason:stoppedReason,Containers:containers[].{Name:name,ExitCode:exitCode,Reason:reason}}'
+
+# 5. Check task definition
+aws ecs describe-task-definition --task-definition <task-def> \
+  --query 'taskDefinition.{CPU:cpu,Memory:memory,Containers:containerDefinitions[].{Name:name,Image:image,Memory:memory}}'
+
+# 6. Check cluster capacity (for EC2 launch type)
+aws ecs describe-clusters --clusters <cluster-name> \
+  --query 'clusters[].{RegisteredInstances:registeredContainerInstancesCount,RunningTasks:runningTasksCount,PendingTasks:pendingTasksCount}'
+```
+
+**Likely causes:**
+- Container exited with error (check exitCode and logs)
+- Image pull failure (ECR permissions, image not found)
+- Insufficient cluster capacity (EC2 launch type)
+- Health check failures (ALB target group)
+- Resource constraints (CPU/memory limits)
+- Task role missing permissions
+
+### Auto Scaling Issues
+
+```bash
+# 1. Check Auto Scaling group status
+aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names <asg-name> \
+  --query 'AutoScalingGroups[].{Desired:DesiredCapacity,Min:MinSize,Max:MaxSize,Instances:Instances[].{Id:InstanceId,Health:HealthStatus,State:LifecycleState}}'
+
+# 2. Check scaling activities
+aws autoscaling describe-scaling-activities --auto-scaling-group-name <asg-name> --max-items 10 \
+  --query 'Activities[].{Status:StatusCode,Cause:Cause,Description:Description}'
+
+# 3. Check scaling policies
+aws autoscaling describe-policies --auto-scaling-group-name <asg-name> \
+  --query 'ScalingPolicies[].{Name:PolicyName,Type:PolicyType,TargetValue:TargetTrackingConfiguration.TargetValue}'
+
+# 4. Check instance refresh status (if in progress)
+aws autoscaling describe-instance-refreshes --auto-scaling-group-name <asg-name> --max-records 5
+
+# 5. Check CloudWatch alarms linked to ASG
+aws cloudwatch describe-alarms --alarm-name-prefix <asg-name> \
+  --query 'MetricAlarms[].{Name:AlarmName,State:StateValue,Metric:MetricName}'
+
+# 6. Check launch template/config
+aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names <asg-name> \
+  --query 'AutoScalingGroups[].{LaunchTemplate:LaunchTemplate,MixedPolicy:MixedInstancesPolicy}'
+```
+
+**Likely causes:**
+- Max capacity reached (can't scale up)
+- Launch template/config issues (AMI, instance type unavailable)
+- Health check failures terminating instances
+- Scaling policy not triggering (alarm threshold not met)
+- Cooldown period preventing scaling
+- Subnet has no available IPs
+
+### SNS Delivery Issues
+
+```bash
+# 1. Check topic attributes
+aws sns get-topic-attributes --topic-arn <topic-arn>
+
+# 2. List subscriptions
+aws sns list-subscriptions-by-topic --topic-arn <topic-arn>
+
+# 3. Check subscription attributes (for specific endpoint)
+aws sns get-subscription-attributes --subscription-arn <subscription-arn>
+
+# 4. Check delivery metrics
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/SNS \
+  --metric-name NumberOfMessagesPublished \
+  --dimensions Name=TopicName,Value=<topic-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 5. Check failed deliveries
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/SNS \
+  --metric-name NumberOfNotificationsFailed \
+  --dimensions Name=TopicName,Value=<topic-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 6. Check delivery logs (if enabled)
+aws logs filter-log-events \
+  --log-group-name sns/<region>/<account-id>/<topic-name> \
+  --filter-pattern "?FAILURE ?delivery" \
+  --limit 20
+```
+
+**Likely causes:**
+- Subscription not confirmed (PendingConfirmation status)
+- Endpoint not reachable (Lambda error, HTTP endpoint down)
+- Filter policy rejecting messages
+- Dead-letter queue receiving failures
+- IAM permissions for cross-account delivery
+- Encryption key access issues (KMS)
 
 ## Standard Diagnosis Output Format
 
