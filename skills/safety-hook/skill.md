@@ -121,7 +121,27 @@ Read operations are generally allowed:
 | Pattern | Reason |
 |---------|--------|
 | `python* boto3` | Direct AWS SDK |
+| `node/bun @aws-sdk` | Direct AWS SDK (JS) |
 | `curl *.amazonaws.com` | Direct API access |
+
+### IaC Tools Blocking
+
+| Tool | Reason |
+|------|--------|
+| `terraform` | Infrastructure mutation |
+| `pulumi` | Infrastructure mutation |
+| `eksctl` | EKS cluster mutation |
+| `helm` | Kubernetes deployment |
+
+### Shell Indirection Blocking
+
+| Pattern | Reason |
+|---------|--------|
+| `bash -c "kubectl delete..."` | Shell bypass |
+| `sh -c "aws iam..."` | Shell bypass |
+| `eval "kubectl delete..."` | Eval bypass |
+| `xargs aws/kubectl` | Pipe bypass |
+| `| aws/kubectl` | Pipe bypass |
 
 ### Eval Kernel Protection (Python)
 
