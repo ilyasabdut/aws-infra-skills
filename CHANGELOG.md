@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2026-09-22
+
+### Documentation
+- Updated README with IaC and shell bypass protection sections
+- Updated safety-hook skill documentation with all bypass protections
+
+### Tests
+- Extended test suite from 26 to 37 tests
+- Added IaC tools tests (terraform, helm, eksctl, pulumi)
+- Added shell indirection tests (bash -c, sh -c, eval)
+- Added pipe/xargs bypass tests
+
 ## [1.3.1] - 2026-09-22
 
 ### Added
@@ -75,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.3.2]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.2.1...v1.2.2
