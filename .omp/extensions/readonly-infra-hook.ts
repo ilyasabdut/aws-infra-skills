@@ -122,6 +122,8 @@ const AWS_MUTATION_VERBS = [
 	"batch-put-",
 	"batch-associate-",
 	"batch-disassociate-",
+	"batch-update-",
+	"batch-import-",
 	// Replacement
 	"replace-",
 	// Provisioning
@@ -161,6 +163,8 @@ const AWS_MUTATION_VERBS = [
 	"unmonitor-",
 	// Cleanup
 	"purge-",
+	// Rebuild
+	"rebuild-",
 	// Other
 	"add-",
 	"write-",
