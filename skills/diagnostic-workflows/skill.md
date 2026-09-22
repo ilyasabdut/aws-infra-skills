@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -27,6 +27,10 @@ Use this skill when you need to diagnose:
 - Load balancer health check failures
 - API Gateway 5xx errors and latency
 - CloudFront cache and origin issues
+- DynamoDB throttling and latency
+- ElastiCache connection and performance
+- Step Functions execution failures
+- Kinesis stream throughput issues
 
 ## Pod Crash Diagnosis
 
@@ -748,6 +752,227 @@ aws cloudfront list-invalidations --distribution-id <distribution-id> --max-item
 - Low cache hit ratio due to cache policy
 - Distribution not deployed yet
 - SSL certificate issues with origin
+
+### DynamoDB Throttling/Latency Issues
+
+```bash
+# 1. Check consumed vs provisioned capacity
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/DynamoDB \
+  --metric-name ConsumedReadCapacityUnits \
+  --dimensions Name=TableName,Value=<table-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 2. Check throttled requests
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/DynamoDB \
+  --metric-name ThrottledRequests \
+  --dimensions Name=TableName,Value=<table-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 3. Check table status and capacity mode
+aws dynamodb describe-table --table-name <table-name> \
+  --query 'Table.{Status:TableStatus,BillingMode:BillingModeSummary.BillingMode,RCU:ProvisionedThroughput.ReadCapacityUnits,WCU:ProvisionedThroughput.WriteCapacityUnits}'
+
+# 4. Check latency
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/DynamoDB \
+  --metric-name SuccessfulRequestLatency \
+  --dimensions Name=TableName,Value=<table-name> Name=Operation,Value=GetItem \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average p99
+
+# 5. Check GSI throttling (if applicable)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/DynamoDB \
+  --metric-name ThrottledRequests \
+  --dimensions Name=TableName,Value=<table-name> Name=GlobalSecondaryIndexName,Value=<gsi-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+```
+
+**Likely causes:**
+- Provisioned capacity too low for traffic
+- Hot partition (uneven key distribution)
+- GSI capacity lagging behind table
+- Burst capacity exhausted
+- Large item sizes increasing RCU/WCU consumption
+
+### ElastiCache Connection/Performance Issues
+
+```bash
+# 1. Check cluster status
+aws elasticache describe-cache-clusters --cache-cluster-id <cluster-id> \
+  --query 'CacheClusters[].{Status:CacheClusterStatus,Engine:Engine,Nodes:NumCacheNodes}'
+
+# 2. Check CPU utilization
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ElastiCache \
+  --metric-name CPUUtilization \
+  --dimensions Name=CacheClusterId,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average Maximum
+
+# 3. Check memory usage (Redis)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ElastiCache \
+  --metric-name DatabaseMemoryUsagePercentage \
+  --dimensions Name=CacheClusterId,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average Maximum
+
+# 4. Check connections
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ElastiCache \
+  --metric-name CurrConnections \
+  --dimensions Name=CacheClusterId,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Maximum
+
+# 5. Check evictions (memory pressure indicator)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ElastiCache \
+  --metric-name Evictions \
+  --dimensions Name=CacheClusterId,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 6. Check security group
+aws elasticache describe-cache-clusters --cache-cluster-id <cluster-id> \
+  --query 'CacheClusters[].SecurityGroups[].SecurityGroupId' --output text | \
+  xargs -I {} aws ec2 describe-security-groups --group-ids {}
+```
+
+**Likely causes:**
+- Security group not allowing Redis port (6379) / Memcached port (11211)
+- Memory exhausted (high evictions)
+- CPU saturation on single-threaded Redis
+- Max connections reached
+- Cluster in maintenance or modifying state
+
+### Step Functions Execution Failures
+
+```bash
+# 1. List recent failed executions
+aws stepfunctions list-executions \
+  --state-machine-arn <state-machine-arn> \
+  --status-filter FAILED \
+  --max-results 10
+
+# 2. Get execution details
+aws stepfunctions describe-execution --execution-arn <execution-arn>
+
+# 3. Get execution history (find failed step)
+aws stepfunctions get-execution-history \
+  --execution-arn <execution-arn> \
+  --query 'events[?type==`TaskFailed` || type==`ExecutionFailed`]'
+
+# 4. Check state machine definition
+aws stepfunctions describe-state-machine --state-machine-arn <state-machine-arn> \
+  --query '{Name:name,Type:type,CreationDate:creationDate}'
+
+# 5. Check execution metrics
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/States \
+  --metric-name ExecutionsFailed \
+  --dimensions Name=StateMachineArn,Value=<state-machine-arn> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 6. Check throttling
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/States \
+  --metric-name ExecutionThrottled \
+  --dimensions Name=StateMachineArn,Value=<state-machine-arn> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+```
+
+**Likely causes:**
+- Lambda task timeout or error
+- Invalid JSON in state output
+- Catch/Retry not handling transient errors
+- IAM role missing permissions for task
+- Service integration returning error
+
+### Kinesis Stream Throughput Issues
+
+```bash
+# 1. Check stream status
+aws kinesis describe-stream-summary --stream-name <stream-name>
+
+# 2. Check write throughput exceeded
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Kinesis \
+  --metric-name WriteProvisionedThroughputExceeded \
+  --dimensions Name=StreamName,Value=<stream-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 3. Check read throughput exceeded
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Kinesis \
+  --metric-name ReadProvisionedThroughputExceeded \
+  --dimensions Name=StreamName,Value=<stream-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 4. Check iterator age (consumer lag)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Kinesis \
+  --metric-name GetRecords.IteratorAgeMilliseconds \
+  --dimensions Name=StreamName,Value=<stream-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Maximum
+
+# 5. Check incoming records
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Kinesis \
+  --metric-name IncomingRecords \
+  --dimensions Name=StreamName,Value=<stream-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 6. List shards
+aws kinesis list-shards --stream-name <stream-name>
+```
+
+**Likely causes:**
+- Not enough shards for throughput (1 MB/s write, 2 MB/s read per shard)
+- Hot shard (uneven partition key distribution)
+- Consumer not keeping up (high iterator age)
+- Multiple consumers exceeding read throughput
+- Record size exceeding 1 MB limit
 
 ## Standard Diagnosis Output Format
 
