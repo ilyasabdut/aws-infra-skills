@@ -1,6 +1,6 @@
 ---
 name: AWS Investigation
-description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, load balancers, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, and SSM.
+description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, SSM, ECS, DynamoDB, API Gateway, and ElastiCache.
 ---
 
 # AWS Investigation Skill
@@ -21,6 +21,10 @@ Use this skill when investigating:
 - SQS queue depth and dead letter queues
 - SNS topics and subscriptions
 - VPC networking and security groups
+- ECS clusters, services, and tasks
+- DynamoDB tables and capacity metrics
+- API Gateway REST/HTTP APIs and errors
+- ElastiCache (Redis/Memcached) clusters and metrics
 
 ## Quick Reference
 
@@ -551,6 +555,164 @@ aws ssm describe-parameters --parameter-filters "Key=Name,Values=<prefix>"
 ```bash
 aws ssm describe-parameters --parameter-filters "Key=Name,Values=<param-name>"
 ```
+
+## ECS Investigation
+
+### List clusters
+```bash
+aws ecs list-clusters
+aws ecs describe-clusters --clusters <cluster-name>
+```
+
+### List services
+```bash
+aws ecs list-services --cluster <cluster-name>
+aws ecs describe-services --cluster <cluster-name> --services <service-name>
+```
+
+### List tasks
+```bash
+aws ecs list-tasks --cluster <cluster-name>
+aws ecs list-tasks --cluster <cluster-name> --service-name <service-name>
+aws ecs describe-tasks --cluster <cluster-name> --tasks <task-id>
+```
+
+### Task definition
+```bash
+aws ecs describe-task-definition --task-definition <task-def>
+```
+
+### Container insights (if enabled)
+```bash
+aws logs filter-log-events \
+  --log-group-name /aws/ecs/containerinsights/<cluster>/performance \
+  --limit 50
+```
+
+## DynamoDB Investigation
+
+### List tables
+```bash
+aws dynamodb list-tables
+aws dynamodb describe-table --table-name <table-name>
+```
+
+### Table metrics (capacity, throttling)
+```bash
+# Read/write capacity consumed
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/DynamoDB \
+  --metric-name ConsumedReadCapacityUnits \
+  --dimensions Name=TableName,Value=<table-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+
+# Throttled requests
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/DynamoDB \
+  --metric-name ThrottledRequests \
+  --dimensions Name=TableName,Value=<table-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+```
+
+### Global secondary indexes
+```bash
+aws dynamodb describe-table --table-name <table-name> \
+  --query 'Table.GlobalSecondaryIndexes'
+```
+
+## API Gateway Investigation
+
+### List REST APIs
+```bash
+aws apigateway get-rest-apis
+aws apigateway get-rest-api --rest-api-id <api-id>
+```
+
+### List HTTP APIs (API Gateway v2)
+```bash
+aws apigatewayv2 get-apis
+aws apigatewayv2 get-api --api-id <api-id>
+```
+
+### Stages and deployments
+```bash
+aws apigateway get-stages --rest-api-id <api-id>
+aws apigateway get-deployments --rest-api-id <api-id>
+```
+
+### API Gateway metrics
+```bash
+# 4XX/5XX errors
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ApiGateway \
+  --metric-name 5XXError \
+  --dimensions Name=ApiName,Value=<api-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+
+# Latency
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ApiGateway \
+  --metric-name Latency \
+  --dimensions Name=ApiName,Value=<api-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Average
+```
+
+## ElastiCache Investigation
+
+### List clusters
+```bash
+# Redis
+aws elasticache describe-replication-groups
+aws elasticache describe-replication-groups --replication-group-id <group-id>
+
+# Memcached
+aws elasticache describe-cache-clusters
+aws elasticache describe-cache-clusters --cache-cluster-id <cluster-id>
+```
+
+### Node status
+```bash
+aws elasticache describe-cache-clusters --cache-cluster-id <cluster-id> --show-cache-node-info
+```
+
+### ElastiCache metrics
+```bash
+# CPU utilization
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ElastiCache \
+  --metric-name CPUUtilization \
+  --dimensions Name=CacheClusterId,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Average
+
+# Memory usage (Redis)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ElastiCache \
+  --metric-name DatabaseMemoryUsagePercentage \
+  --dimensions Name=CacheClusterId,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Average
+
+# Evictions
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ElastiCache \
+  --metric-name Evictions \
+  --dimensions Name=CacheClusterId,Value=<cluster-id> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 --statistics Sum
+```
+
 ---
 
 **Important**: This skill only covers read operations. Mutating operations (create, delete, modify, update) should be blocked by a safety hook in production agent environments.
