@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-09-23
+
+### Added
+- **diagnostic-workflows skill**: S3 access/permission diagnosis (bucket policy, ACL, public access block, encryption, CORS)
+- **diagnostic-workflows skill**: SSM parameter/command diagnosis (agent status, command invocations, parameter history)
+- **diagnostic-workflows skill**: VPC connectivity diagnosis (subnets, routes, NAT, IGW, endpoints, NACLs, flow logs)
+
 ## [1.16.0] - 2026-09-23
 
 ### Added
@@ -273,6 +280,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.17.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.13.0...v1.14.0
