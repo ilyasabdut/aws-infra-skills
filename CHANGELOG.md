@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.11] - 2026-09-23
+
+### Fixed
+- **safety-hook**: Block additional mutation verbs (78 patterns total):
+  - `batch-associate-` (resource batch associations)
+
 ## [1.23.10] - 2026-09-23
 
 ### Fixed
@@ -408,6 +414,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.23.11]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.10...v1.23.11
 [1.23.10]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.9...v1.23.10
 [1.23.9]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.8...v1.23.9
 [1.23.8]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.7...v1.23.8
