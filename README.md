@@ -37,8 +37,8 @@ This project provides skills that teach AI agents (Claude, Claude Code, omp) how
 | Skill | Description |
 |-------|-------------|
 | **k8s-investigation** | kubectl patterns for pods, deployments, nodes, logs, events |
-| **aws-investigation** | AWS CLI patterns for EKS, EC2, CloudWatch, S3, load balancers |
-| **diagnostic-workflows** | Step-by-step diagnosis for CrashLoopBackOff, OOMKilled, NotReady, etc. |
+| **aws-investigation** | AWS CLI patterns for EKS, EC2, CloudWatch, S3, RDS, Lambda, SQS, SNS, Route53, Secrets Manager, SSM |
+| **diagnostic-workflows** | Step-by-step diagnosis for pod crashes, RDS, Lambda, SQS, ALB issues |
 | **safety-hook** | Documentation + script that blocks dangerous operations |
 
 ## Installation
