@@ -1,6 +1,6 @@
 ---
 name: AWS Investigation
-description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, load balancers, S3, RDS, Lambda, SQS, SNS, and VPC.
+description: Read-only AWS CLI patterns for investigating EKS, EC2, CloudWatch, load balancers, S3, RDS, Lambda, SQS, SNS, VPC, Route53, Secrets Manager, and SSM.
 ---
 
 # AWS Investigation Skill
