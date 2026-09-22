@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-09-23
+
+### Added
+- **diagnostic-workflows skill**: WAF blocked requests diagnosis (Web ACL, blocked/allowed metrics, sampled requests, logs)
+- **diagnostic-workflows skill**: Route53 health check diagnosis (status, connection time, associated records)
+- **diagnostic-workflows skill**: ACM certificate diagnosis (validation status, expiration, renewal)
+- **diagnostic-workflows skill**: Secrets Manager rotation diagnosis (config, versions, Lambda logs)
+
 ## [1.15.0] - 2026-09-23
 
 ### Added
@@ -265,6 +273,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.16.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.12.0...v1.13.0
