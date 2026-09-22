@@ -209,6 +209,13 @@ This agent has read-only infrastructure access.
 
 3. **Allowlist maintenance**: New kubectl subcommands won't be allowed until added to the allowlist.
 
+4. **Shell metaprogramming**: The hook operates on the raw command string. It cannot catch:
+   - Variable expansion: `CMD="kubectl delete"; $CMD pod test`
+   - Array expansion: `arr=(kubectl delete); "${arr[@]}"`
+   - Dynamically constructed commands in multi-line scripts
+
+5. **Alias bypass**: Aliases are not expanded in non-interactive shells (not a risk in agent context).
+
 ## When Commands Are Blocked
 
 If a legitimate command is blocked:
