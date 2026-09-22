@@ -158,6 +158,8 @@ const AWS_MUTATION_VERBS = [
 	// Monitoring
 	"monitor-",
 	"unmonitor-",
+	// Cleanup
+	"purge-",
 	// Other
 	"add-",
 	"write-",
