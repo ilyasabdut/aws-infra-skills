@@ -25,10 +25,11 @@ block() {
 # FAST PATH: Early exit for non-infrastructure commands
 # ============================================================================
 
-# Quick check - if not kubectl/aws/env/printenv/python/curl/IaC/shell/node/eval/xargs, allow immediately
-if [[ ! "$CMD" =~ (^|[[:space:]])(kubectl|aws|env|printenv|export|set|python|curl|wget|terraform|pulumi|eksctl|helm|bash|sh|node|bun|eval|xargs)[[:space:]] ]] && \
-   [[ ! "$CMD" =~ ^(env|printenv|export|set|eval)$ ]] && \
-   [[ ! "$CMD" =~ \|[[:space:]]*(aws|kubectl) ]]; then
+# Quick check - if not kubectl/aws/env/printenv/python/curl/IaC/shell/node/eval/xargs/declare/echo, allow immediately
+if [[ ! "$CMD" =~ (^|[[:space:]])(kubectl|aws|env|printenv|export|set|python|curl|wget|terraform|pulumi|eksctl|helm|bash|sh|node|bun|eval|xargs|declare|echo)[[:space:]] ]] && \
+   [[ ! "$CMD" =~ ^(env|printenv|export|set|eval|declare)$ ]] && \
+   [[ ! "$CMD" =~ \|[[:space:]]*(aws|kubectl) ]] && \
+   [[ ! "$CMD" =~ \$\(|\` ]]; then
     exit 0
 fi
 
@@ -133,6 +134,11 @@ if [[ "$CMD" =~ ^(env|printenv|export|set)$ ]] || [[ "$CMD" =~ ^printenv[[:space
     block "Environment inspection is not permitted (protects credentials)."
 fi
 
+# Block declare -x and export -p (list exported variables)
+if [[ "$CMD" =~ declare[[:space:]]+-[^[:space:]]*x ]] || [[ "$CMD" =~ ^declare$ ]] || [[ "$CMD" =~ export[[:space:]]+-p ]]; then
+    block "Environment inspection is not permitted (protects credentials)."
+fi
+
 # Block /proc environ access
 if [[ "$CMD" =~ /proc/[0-9]+/environ ]] || [[ "$CMD" =~ /proc/self/environ ]]; then
     block "Process environment inspection is not permitted."
@@ -173,6 +179,16 @@ if [[ "$CMD" =~ xargs[[:space:]]+(aws|kubectl) ]] || [[ "$CMD" =~ \|[[:space:]]*
     if [[ "$CMD" =~ (delete|terminate|create|modify|apply|exec|scale|iam) ]]; then
         block "Piping to dangerous aws/kubectl commands is not permitted."
     fi
+fi
+
+# Block command substitution with dangerous commands (simplified pattern)
+if [[ "$CMD" =~ \$\( ]] && [[ "$CMD" =~ (kubectl[[:space:]]+(delete|apply|exec|scale)|aws[[:space:]]+iam|terminate-|delete-cluster|create-|modify-) ]]; then
+    block "Command substitution with dangerous commands is not permitted."
+fi
+
+# Block backtick substitution with dangerous commands
+if [[ "$CMD" =~ \` ]] && [[ "$CMD" =~ (kubectl[[:space:]]+(delete|apply|exec|scale)|aws[[:space:]]+iam|terminate-|delete-cluster|create-|modify-) ]]; then
+    block "Command substitution with dangerous commands is not permitted."
 fi
 # Block IaC tools that can modify infrastructure
 if [[ "$CMD" =~ (^|[[:space:]])(terraform|pulumi|eksctl|helm)[[:space:]] ]]; then
