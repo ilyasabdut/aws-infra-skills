@@ -150,6 +150,7 @@ Read operations are generally allowed:
 | `$(kubectl delete...)` | Subshell bypass |
 | `` `aws iam...` `` | Backtick bypass |
 | `$(aws terminate-...)` | Subshell bypass |
+| `<(kubectl delete...)` | Process substitution bypass |
 
 ### Environment Inspection Blocking
 
