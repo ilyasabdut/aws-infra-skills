@@ -93,9 +93,9 @@ The safety hook is optimized for minimal latency (~5ms per command check). Optim
 - `kubectl apply`, `delete`, `exec`, `scale`, `edit`, `patch`
 - `kubectl drain`, `cordon`, `taint`
 - `aws iam *` (all IAM operations)
-- `aws *` with 67 mutation verb patterns:
+- `aws *` with 75 mutation verb patterns:
   - CRUD: `delete-`, `create-`, `put-`, `remove-`, `update-`, `modify-`
-  - Lifecycle: `terminate-`, `start-`, `stop-`, `reboot-`, `enable-`, `disable-`
+  - Lifecycle: `terminate-`, `start-`, `stop-`, `reboot-`, `enable-`, `disable-`, `suspend-`, `resume-`
   - Attachment: `attach-`, `detach-`, `register-`, `deregister-`, `associate-`, `disassociate-`
   - Security: `authorize-`, `revoke-`
   - Resource: `import-`, `copy-`, `allocate-`, `release-`, `cancel-`
@@ -104,7 +104,7 @@ The safety hook is optimized for minimal latency (~5ms per command check). Optim
   - Messaging: `send-`, `invoke`, `publish`, `send-command`
   - Compute: `run-`
   - Execution: `execute-`
-  - Configuration: `set-`, `reset-`
+  - Configuration: `set-`, `reset-`, `change-`
   - Recovery: `restore-`, `failover-`, `promote-`, `revert-`, `switchover-`
   - Movement: `move-`, `migrate-`
   - Batch: `batch-write-`, `batch-delete-`, `batch-put-`
@@ -117,6 +117,9 @@ The safety hook is optimized for minimal latency (~5ms per command check). Optim
   - Export/Clone: `export-`, `clone-`
   - Locking: `lock-`, `unlock-`
   - BYOIP: `advertise-`, `withdraw-`
+  - Rotation: `rotate-`, `renew-`
+  - Scaling: `scale-`
+  - Completion: `complete-`, `abort-`
   - Other: `add-`, `write-`
 - `aws s3 rm`, `aws s3 cp ... s3://` (upload)
 - `env`, `printenv` (credential protection)

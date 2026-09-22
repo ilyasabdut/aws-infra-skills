@@ -97,7 +97,7 @@ Read operations are generally allowed:
 |----------|----------|--------|
 | **Services** | `aws iam *`, `aws organizations *` | Full service block |
 | **CRUD** | `delete-`, `create-`, `put-`, `remove-`, `update-`, `modify-` | Resource mutation |
-| **Lifecycle** | `terminate-`, `start-`, `stop-`, `reboot-`, `enable-`, `disable-` | State changes |
+| **Lifecycle** | `terminate-`, `start-`, `stop-`, `reboot-`, `enable-`, `disable-`, `suspend-`, `resume-` | State changes |
 | **Attachment** | `attach-`, `detach-`, `register-`, `deregister-`, `associate-`, `disassociate-` | Resource linking |
 | **Security** | `authorize-`, `revoke-` | Security group rules |
 | **Resource** | `import-`, `copy-`, `allocate-`, `release-`, `cancel-` | Resource operations |
@@ -106,7 +106,7 @@ Read operations are generally allowed:
 | **Messaging** | `send-`, `invoke`, `publish`, `send-command` | Message/execution |
 | **Compute** | `run-` | Instance/task launch |
 | **Execution** | `execute-` | Code/SQL execution |
-| **Configuration** | `set-`, `reset-` | Configuration changes |
+| **Configuration** | `set-`, `reset-`, `change-` | Configuration changes |
 | **Recovery** | `restore-`, `failover-`, `promote-`, `revert-`, `switchover-` | DR operations |
 | **Movement** | `move-`, `migrate-` | Resource movement |
 | **Batch** | `batch-write-`, `batch-delete-`, `batch-put-` | DynamoDB batch mutations |
@@ -119,6 +119,9 @@ Read operations are generally allowed:
 | **Export/Clone** | `export-`, `clone-` | Image/snapshot export, RDS cloning |
 | **Locking** | `lock-`, `unlock-` | Snapshot locking |
 | **BYOIP** | `advertise-`, `withdraw-` | BYOIP advertisement |
+| **Rotation** | `rotate-`, `renew-` | Secret/certificate rotation |
+| **Scaling** | `scale-` | Autoscaling operations |
+| **Completion** | `complete-`, `abort-` | Lifecycle actions, multipart uploads |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
