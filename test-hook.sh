@@ -118,6 +118,12 @@ test_block "semicolon aws terminate" 'aws s3 ls; aws ec2 terminate-instances --i
 test_block "newline kubectl delete" $'kubectl get pods\nkubectl delete pod test'
 
 echo ""
+echo "--- Control flow tests ---"
+test_block "function kubectl delete" 'function k() { kubectl delete pod test; }; k'
+test_block "while loop kubectl delete" 'while true; do kubectl delete pod test; done'
+test_block "for loop kubectl delete" 'for p in $(kubectl get pods); do kubectl delete $p; done'
+
+echo ""
 echo "--- Environment inspection tests ---"
 test_block "declare -x" "declare -x"
 test_block "export -p" "export -p"
