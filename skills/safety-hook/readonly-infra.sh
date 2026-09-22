@@ -25,9 +25,10 @@ block() {
 # FAST PATH: Early exit for non-infrastructure commands
 # ============================================================================
 
-# Quick check - if not kubectl/aws/env/printenv/python/curl/IaC/shell, allow immediately
-if [[ ! "$CMD" =~ (^|[[:space:]])(kubectl|aws|env|printenv|export|set|python|curl|wget|terraform|pulumi|eksctl|helm|bash|sh)[[:space:]] ]] && \
-   [[ ! "$CMD" =~ ^(env|printenv|export|set)$ ]]; then
+# Quick check - if not kubectl/aws/env/printenv/python/curl/IaC/shell/node/eval/xargs, allow immediately
+if [[ ! "$CMD" =~ (^|[[:space:]])(kubectl|aws|env|printenv|export|set|python|curl|wget|terraform|pulumi|eksctl|helm|bash|sh|node|bun|eval|xargs)[[:space:]] ]] && \
+   [[ ! "$CMD" =~ ^(env|printenv|export|set|eval)$ ]] && \
+   [[ ! "$CMD" =~ \|[[:space:]]*(aws|kubectl) ]]; then
     exit 0
 fi
 
@@ -154,6 +155,24 @@ fi
 # Block curl/wget to AWS APIs
 if [[ "$CMD" =~ (curl|wget).*\.amazonaws\.com ]]; then
     block "Direct AWS API access not permitted. Use aws CLI."
+fi
+# Block Node.js/Bun AWS SDK
+if [[ "$CMD" =~ (node|bun)[[:space:]].*@aws-sdk ]] || [[ "$CMD" =~ (node|bun)[[:space:]]+-e.*aws-sdk ]]; then
+    block "Direct SDK access not permitted. Use aws CLI for allowed operations."
+fi
+
+# Block eval with dangerous commands
+if [[ "$CMD" =~ ^eval[[:space:]] ]] || [[ "$CMD" =~ [[:space:]]eval[[:space:]] ]]; then
+    if [[ "$CMD" =~ (kubectl[[:space:]]+(delete|apply|exec|scale)|aws[[:space:]]+iam|aws[[:space:]]+[a-z]+[[:space:]]+(delete-|create-|terminate-)) ]]; then
+        block "eval with dangerous commands is not permitted."
+    fi
+fi
+
+# Block xargs/pipe bypass to dangerous aws commands
+if [[ "$CMD" =~ xargs[[:space:]]+(aws|kubectl) ]] || [[ "$CMD" =~ \|[[:space:]]*(aws|kubectl) ]]; then
+    if [[ "$CMD" =~ (delete|terminate|create|modify|apply|exec|scale|iam) ]]; then
+        block "Piping to dangerous aws/kubectl commands is not permitted."
+    fi
 fi
 # Block IaC tools that can modify infrastructure
 if [[ "$CMD" =~ (^|[[:space:]])(terraform|pulumi|eksctl|helm)[[:space:]] ]]; then
