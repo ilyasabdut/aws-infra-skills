@@ -325,6 +325,170 @@ aws ec2 describe-security-groups --filters "Name=vpc-id,Values=<vpc-id>"
 aws ec2 describe-network-interfaces --filters "Name=vpc-id,Values=<vpc-id>"
 ```
 
+
+## RDS Investigation
+
+### List DB instances
+```bash
+aws rds describe-db-instances
+aws rds describe-db-instances --db-instance-identifier <instance-id>
+```
+
+### DB instance status
+```bash
+# Status and endpoint
+aws rds describe-db-instances --db-instance-identifier <instance-id> \
+  --query 'DBInstances[].{ID:DBInstanceIdentifier,Status:DBInstanceStatus,Endpoint:Endpoint.Address,Port:Endpoint.Port}'
+```
+
+### DB clusters (Aurora)
+```bash
+aws rds describe-db-clusters
+aws rds describe-db-clusters --db-cluster-identifier <cluster-id>
+```
+
+### DB events (recent issues)
+```bash
+# Last 24 hours
+aws rds describe-events --duration 1440
+
+# For specific instance
+aws rds describe-events --source-identifier <instance-id> --source-type db-instance
+```
+
+### DB logs
+```bash
+# List log files
+aws rds describe-db-log-files --db-instance-identifier <instance-id>
+
+# Download log
+aws rds download-db-log-file-portion \
+  --db-instance-identifier <instance-id> \
+  --log-file-name <log-file-name>
+```
+
+### Performance Insights
+```bash
+# Get resource metrics
+aws pi get-resource-metrics \
+  --service-type RDS \
+  --identifier db-<resource-id> \
+  --metric-queries '[{"Metric":"db.load.avg"}]' \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period-in-seconds 60
+```
+
+### DB subnet groups
+```bash
+aws rds describe-db-subnet-groups
+```
+
+### DB parameter groups
+```bash
+aws rds describe-db-parameter-groups
+aws rds describe-db-parameters --db-parameter-group-name <group-name>
+```
+
+## Lambda Investigation
+
+### List functions
+```bash
+aws lambda list-functions
+aws lambda get-function --function-name <function-name>
+```
+
+### Function configuration
+```bash
+aws lambda get-function-configuration --function-name <function-name>
+```
+
+### Invocation metrics
+```bash
+# Recent invocations via CloudWatch
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Invocations \
+  --dimensions Name=FunctionName,Value=<function-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Sum
+
+# Errors
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Errors \
+  --dimensions Name=FunctionName,Value=<function-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Sum
+
+# Duration (cold starts show as high duration)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Duration \
+  --dimensions Name=FunctionName,Value=<function-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Average Maximum
+```
+
+### Function logs
+```bash
+# Log group is /aws/lambda/<function-name>
+aws logs filter-log-events \
+  --log-group-name /aws/lambda/<function-name> \
+  --filter-pattern "ERROR"
+```
+
+## SQS Investigation
+
+### List queues
+```bash
+aws sqs list-queues
+```
+
+### Queue attributes
+```bash
+aws sqs get-queue-attributes \
+  --queue-url <queue-url> \
+  --attribute-names All
+```
+
+### Queue depth (messages available)
+```bash
+aws sqs get-queue-attributes \
+  --queue-url <queue-url> \
+  --attribute-names ApproximateNumberOfMessages ApproximateNumberOfMessagesNotVisible
+```
+
+### Dead letter queue check
+```bash
+# Check redrive policy
+aws sqs get-queue-attributes \
+  --queue-url <queue-url> \
+  --attribute-names RedrivePolicy
+```
+
+## SNS Investigation
+
+### List topics
+```bash
+aws sns list-topics
+```
+
+### Topic attributes
+```bash
+aws sns get-topic-attributes --topic-arn <topic-arn>
+```
+
+### Subscriptions
+```bash
+aws sns list-subscriptions-by-topic --topic-arn <topic-arn>
+```
 ---
 
 **Important**: This skill only covers read operations. Mutating operations (create, delete, modify, update) should be blocked by a safety hook in production agent environments.
