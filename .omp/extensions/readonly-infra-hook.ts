@@ -470,7 +470,7 @@ export default function readonlyInfraHook(pi: ExtensionAPI): void {
 		}
 
 		// ========== COMMAND SUBSTITUTION BLOCKING ==========
-		if (/\$\(/.test(command) || /`/.test(command) || /<\(/.test(command)) {
+		if (/\$\(/.test(command) || /`/.test(command) || /<\(/.test(command) || /<<</.test(command)) {
 			if (/kubectl\s+(delete|apply|exec|scale)/.test(command) ||
 				/aws\s+iam/.test(command) ||
 				/(terminate-|delete-cluster|create-|modify-)/.test(command)) {
