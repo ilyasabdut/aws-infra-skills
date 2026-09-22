@@ -470,13 +470,13 @@ export default function readonlyInfraHook(pi: ExtensionAPI): void {
 		}
 
 		// ========== COMMAND SUBSTITUTION BLOCKING ==========
-		if (/\$\(/.test(command) || /`/.test(command)) {
+		if (/\$\(/.test(command) || /`/.test(command) || /<\(/.test(command)) {
 			if (/kubectl\s+(delete|apply|exec|scale)/.test(command) ||
 				/aws\s+iam/.test(command) ||
 				/(terminate-|delete-cluster|create-|modify-)/.test(command)) {
 				return {
 					block: true,
-					reason: `Blocked: Command substitution with dangerous commands is not permitted.\nUse allowed commands directly.`,
+					reason: `Blocked: Command/process substitution with dangerous commands is not permitted.\nUse allowed commands directly.`,
 				} satisfies BlockResult;
 			}
 		}
