@@ -1,6 +1,6 @@
 ---
 name: Diagnostic Workflows
-description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, RDS, Lambda, SQS, ALB) infrastructure issues.
+description: Step-by-step diagnostic procedures for Kubernetes (pods, nodes, deployments, services) and AWS (EKS, EC2, RDS, Lambda, SQS, ALB, API Gateway, CloudFront) infrastructure issues.
 ---
 
 # Diagnostic Workflows
@@ -20,10 +20,13 @@ Use this skill when you need to diagnose:
 - Network policy blocking traffic
 - DNS resolution failures
 - EKS cluster health
+- EC2 instance connectivity issues
 - RDS connection issues
 - Lambda timeout and cold start problems
 - SQS dead letter queue buildup
 - Load balancer health check failures
+- API Gateway 5xx errors and latency
+- CloudFront cache and origin issues
 
 ## Pod Crash Diagnosis
 
@@ -604,6 +607,147 @@ aws cloudwatch get-metric-statistics \
 - Security group blocks health check port
 - Application not listening on expected port
 - Health check timeout too short
+
+### EC2 Instance Connectivity Issues
+
+```bash
+# 1. Check instance state
+aws ec2 describe-instances --instance-ids <instance-id> \
+  --query 'Reservations[].Instances[].{State:State.Name,Status:StateReason.Message}'
+
+# 2. Check instance status checks
+aws ec2 describe-instance-status --instance-ids <instance-id>
+
+# 3. Check security groups
+aws ec2 describe-instances --instance-ids <instance-id> \
+  --query 'Reservations[].Instances[].SecurityGroups[].GroupId' --output text | \
+  xargs -I {} aws ec2 describe-security-groups --group-ids {}
+
+# 4. Check network ACLs for subnet
+aws ec2 describe-instances --instance-ids <instance-id> \
+  --query 'Reservations[].Instances[].SubnetId' --output text | \
+  xargs -I {} aws ec2 describe-network-acls --filters Name=association.subnet-id,Values={}
+
+# 5. Check route table
+aws ec2 describe-instances --instance-ids <instance-id> \
+  --query 'Reservations[].Instances[].SubnetId' --output text | \
+  xargs -I {} aws ec2 describe-route-tables --filters Name=association.subnet-id,Values={}
+
+# 6. Check if instance has public IP or NAT
+aws ec2 describe-instances --instance-ids <instance-id> \
+  --query 'Reservations[].Instances[].{PublicIP:PublicIpAddress,PrivateIP:PrivateIpAddress}'
+```
+
+**Likely causes:**
+- Security group not allowing inbound/outbound traffic
+- Network ACL blocking traffic
+- No route to internet (missing NAT gateway or IGW)
+- Instance in stopped state
+- System/instance status check failed
+
+### API Gateway 5xx/Latency Issues
+
+```bash
+# 1. Check 5xx errors
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ApiGateway \
+  --metric-name 5XXError \
+  --dimensions Name=ApiName,Value=<api-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 2. Check latency
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ApiGateway \
+  --metric-name Latency \
+  --dimensions Name=ApiName,Value=<api-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average p99
+
+# 3. Check integration latency (backend)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ApiGateway \
+  --metric-name IntegrationLatency \
+  --dimensions Name=ApiName,Value=<api-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average p99
+
+# 4. Check throttling
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ApiGateway \
+  --metric-name Count \
+  --dimensions Name=ApiName,Value=<api-name> \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Sum
+
+# 5. Check execution logs (if enabled)
+aws logs filter-log-events \
+  --log-group-name API-Gateway-Execution-Logs_<api-id>/<stage> \
+  --filter-pattern "?5xx ?error ?timeout" \
+  --limit 50
+```
+
+**Likely causes:**
+- Backend integration timeout (Lambda, HTTP endpoint)
+- Backend returning 5xx errors
+- Throttling due to rate limits
+- VPC link connectivity issues (for private integrations)
+
+### CloudFront Cache/Origin Issues
+
+```bash
+# 1. Check error rate
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/CloudFront \
+  --metric-name 5xxErrorRate \
+  --dimensions Name=DistributionId,Value=<distribution-id> Name=Region,Value=Global \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average
+
+# 2. Check cache hit ratio
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/CloudFront \
+  --metric-name CacheHitRate \
+  --dimensions Name=DistributionId,Value=<distribution-id> Name=Region,Value=Global \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Average
+
+# 3. Check origin latency
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/CloudFront \
+  --metric-name OriginLatency \
+  --dimensions Name=DistributionId,Value=<distribution-id> Name=Region,Value=Global \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Average p99
+
+# 4. Check distribution status and origins
+aws cloudfront get-distribution --id <distribution-id> \
+  --query 'Distribution.{Status:Status,Origins:DistributionConfig.Origins.Items[].DomainName}'
+
+# 5. Check recent invalidations
+aws cloudfront list-invalidations --distribution-id <distribution-id> --max-items 10
+```
+
+**Likely causes:**
+- Origin server returning errors
+- Origin timeout (default 30s)
+- Low cache hit ratio due to cache policy
+- Distribution not deployed yet
+- SSL certificate issues with origin
 
 ## Standard Diagnosis Output Format
 
