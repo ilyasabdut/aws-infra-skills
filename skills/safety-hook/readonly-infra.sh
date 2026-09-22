@@ -154,7 +154,7 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
     #   Execution: execute-
     #   Configuration: set-, reset-
     #   Recovery: restore-, failover-, promote-, revert-, switchover-
-    #   Movement: move-
+    #   Movement: move-, migrate-
     #   Batch mutations: batch-write-, batch-delete-, batch-put-
     #   Replacement: replace-
     #   Provisioning: request-, purchase-
@@ -162,8 +162,10 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
     #   Submission: submit-, apply-
     #   Packaging: bundle-
     #   Confirmation: confirm-
+    #   Export/Clone: export-, clone-
+    #   Locking: lock-, unlock-
     #   Other: add-, write-
-    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-instances|run-task|send-command|tag-resource|untag-resource|allocate-|release-|accept-|reject-|cancel-|write-|execute-|set-|reset-|restore-|failover-|promote-|revert-|move-|batch-write-|batch-delete-|batch-put-|replace-|request-|purchase-|assign-|unassign-|submit-|apply-|bundle-|confirm-|switchover-) ]]; then
+    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-instances|run-task|send-command|tag-resource|untag-resource|allocate-|release-|accept-|reject-|cancel-|write-|execute-|set-|reset-|restore-|failover-|promote-|revert-|move-|batch-write-|batch-delete-|batch-put-|replace-|request-|purchase-|assign-|unassign-|submit-|apply-|bundle-|confirm-|switchover-|migrate-|export-|clone-|lock-|unlock-) ]]; then
         block "aws $SERVICE mutation operation is not permitted. Read-only: describe-*, list-*, get-*"
     fi
 fi

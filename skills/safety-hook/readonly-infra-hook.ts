@@ -113,6 +113,7 @@ const AWS_MUTATION_VERBS = [
 	"switchover-",
 	// Movement
 	"move-",
+	"migrate-",
 	// Batch mutations
 	"batch-write-",
 	"batch-delete-",
@@ -132,6 +133,12 @@ const AWS_MUTATION_VERBS = [
 	"bundle-",
 	// Confirmation
 	"confirm-",
+	// Export/Clone
+	"export-",
+	"clone-",
+	// Locking
+	"lock-",
+	"unlock-",
 	// Other
 	"add-",
 	"write-",
