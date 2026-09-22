@@ -215,6 +215,63 @@ aws logs filter-log-events \
   --filter-pattern "pod_name=<pod>"
 ```
 
+### CloudWatch Logs Insights
+```bash
+# Start a query (returns queryId)
+aws logs start-query \
+  --log-group-name <log-group> \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'fields @timestamp, @message | filter @message like /ERROR/ | sort @timestamp desc | limit 50'
+
+# Get query results (use queryId from start-query)
+aws logs get-query-results --query-id <query-id>
+
+# Common Insights queries:
+
+# Error count by log stream
+aws logs start-query \
+  --log-group-name <log-group> \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'filter @message like /ERROR/ | stats count(*) by @logStream'
+
+# Top 10 error messages
+aws logs start-query \
+  --log-group-name <log-group> \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'filter @message like /ERROR/ | stats count(*) as cnt by @message | sort cnt desc | limit 10'
+
+# Latency percentiles (for structured logs with duration field)
+aws logs start-query \
+  --log-group-name <log-group> \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'stats avg(duration) as avg_ms, pct(duration, 50) as p50, pct(duration, 95) as p95, pct(duration, 99) as p99 by bin(5m)'
+
+# Lambda cold starts
+aws logs start-query \
+  --log-group-name /aws/lambda/<function> \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'filter @type = "REPORT" | stats count(*) as invocations, sum(@initDuration > 0) as cold_starts by bin(5m)'
+
+# EKS audit log - who deleted resources
+aws logs start-query \
+  --log-group-name /aws/eks/<cluster>/cluster \
+  --start-time $(date -u -v-24H +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'filter verb = "delete" | fields @timestamp, user.username, objectRef.resource, objectRef.name'
+
+# API Gateway latency by path
+aws logs start-query \
+  --log-group-name API-Gateway-Execution-Logs_<api-id>/<stage> \
+  --start-time $(date -u -v-1H +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'stats avg(integrationLatency) as avg_latency, max(integrationLatency) as max_latency by path'
+```
+
 ## CloudWatch Metrics
 
 ### List metrics
