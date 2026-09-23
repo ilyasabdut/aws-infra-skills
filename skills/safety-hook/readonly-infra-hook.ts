@@ -176,6 +176,16 @@ const AWS_MUTATION_VERBS = [
 	"retry-",
 	// Trigger
 	"trigger-",
+	// Invalidate
+	"invalidate-",
+	// Override
+	"override-",
+	// Post
+	"post-",
+	// Resend
+	"resend-",
+	// Split
+	"split-",
 	// Other
 	"add-",
 	"write-",

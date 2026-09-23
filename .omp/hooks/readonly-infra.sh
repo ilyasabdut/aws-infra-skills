@@ -176,8 +176,13 @@ if [[ "$CMD" =~ (^|[[:space:]])aws[[:space:]]+([a-z0-9-]+) ]]; then
     #   Compose: compose-
     #   Retry: retry-
     #   Trigger: trigger-
+    #   Invalidate: invalidate-
+    #   Override: override-
+    #   Post: post-
+    #   Resend: resend-
+    #   Split: split-
     #   Other: add-, write-
-    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-|send-command|tag-resource|untag-resource|allocate-|release-|accept-|reject-|cancel-|write-|execute-|set-|reset-|restore-|failover-|promote-|revert-|move-|batch-write-|batch-delete-|batch-put-|batch-associate-|batch-disassociate-|batch-update-|batch-import-|replace-|request-|purchase-|assign-|unassign-|submit-|apply-|bundle-|confirm-|switchover-|migrate-|export-|clone-|lock-|unlock-|provision-|deprovision-|advertise-|withdraw-|rotate-|renew-|scale-|suspend-|resume-|complete-|abort-|continue-|change-|monitor-|unmonitor-|purge-|rebuild-|merge-|swap-|compose-|retry-|trigger-) ]]; then
+    if [[ "$CMD" =~ [[:space:]](delete-|terminate-|modify-|update-|create-|put-|remove-|deregister-|attach-|detach-|enable-|disable-|start-|stop-|reboot-|add-|register-|associate-|disassociate-|authorize-|revoke-|import-|copy-|send-|invoke|publish|run-|send-command|tag-resource|untag-resource|allocate-|release-|accept-|reject-|cancel-|write-|execute-|set-|reset-|restore-|failover-|promote-|revert-|move-|batch-write-|batch-delete-|batch-put-|batch-associate-|batch-disassociate-|batch-update-|batch-import-|replace-|request-|purchase-|assign-|unassign-|submit-|apply-|bundle-|confirm-|switchover-|migrate-|export-|clone-|lock-|unlock-|provision-|deprovision-|advertise-|withdraw-|rotate-|renew-|scale-|suspend-|resume-|complete-|abort-|continue-|change-|monitor-|unmonitor-|purge-|rebuild-|merge-|swap-|compose-|retry-|trigger-|invalidate-|override-|post-|resend-|split-) ]]; then
         block "aws $SERVICE mutation operation is not permitted. Read-only: describe-*, list-*, get-*"
     fi
 fi
