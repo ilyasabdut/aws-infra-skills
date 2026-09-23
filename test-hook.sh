@@ -53,11 +53,17 @@ echo "--- AWS CLI tests ---"
 test_allow "aws eks describe-cluster" aws eks describe-cluster --name test
 test_allow "aws eks list-clusters" aws eks list-clusters
 test_allow "aws ec2 describe-instances" aws ec2 describe-instances
+test_allow "aws ecr describe-repositories" aws ecr describe-repositories
+test_allow "aws ecr list-images" aws ecr list-images --repository-name test
 test_allow "aws logs describe-log-groups" aws logs describe-log-groups
 test_allow "aws s3 ls" aws s3 ls
 test_block "aws iam list-users" aws iam list-users
 test_block "aws ec2 terminate-instances" aws ec2 terminate-instances --instance-ids i-123
+test_block "aws ec2 run-instances" aws ec2 run-instances --image-id ami-123
 test_block "aws eks delete-cluster" aws eks delete-cluster --name test
+test_block "aws eks create-cluster" aws eks create-cluster --name test
+test_block "aws ecr delete-repository" aws ecr delete-repository --repository-name test
+test_block "aws ecr put-image" aws ecr put-image --repository-name test
 test_block "aws s3 rm" aws s3 rm s3://bucket/key
 test_block "aws ec2 create-instance" aws ec2 create-instance --image-id ami-123
 
