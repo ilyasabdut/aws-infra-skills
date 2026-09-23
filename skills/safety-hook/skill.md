@@ -168,6 +168,10 @@ Read operations are generally allowed:
 | **Record** | `record-` | SWF activity heartbeat |
 | **Respond** | `respond-` | SWF activity task completion |
 | **Sync** | `sync-` | RoboMaker deployment sync |
+| **Claim** | `claim-` | GameLift game server claim |
+| **Hibernate** | `hibernate-` | EC2 instance hibernation |
+| **Reopen** | `reopen-` | Support case reopening |
+| **Verify** | `verify-` | SES email identity verification |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
