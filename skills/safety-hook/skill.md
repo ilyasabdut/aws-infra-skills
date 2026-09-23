@@ -153,6 +153,8 @@ Read operations are generally allowed:
 | **Issue** | `issue-` | ACM PCA certificate issuance |
 | **Peer** | `peer-`, `unpeer-` | Lightsail VPC peering |
 | **Resolve** | `resolve-` | SSM Incidents resolve |
+| **Notify** | `notify-` | Proton deployment status notification |
+| **Connect** | `connect-` | Elastic Inference instance connection |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
