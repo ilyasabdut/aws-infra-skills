@@ -135,6 +135,12 @@ Read operations are generally allowed:
 | **Post** | `post-` | CodeCommit comment posting |
 | **Resend** | `resend-` | ACM validation email resend |
 | **Split** | `split-` | Kinesis shard split |
+| **Cache** | `flush-` | AppSync/API Gateway cache flush |
+| **Admin (mutations)** | `admin-delete-`, `admin-disable-`, `admin-enable-`, `admin-reset-`, `admin-set-`, `admin-update-`, `admin-create-`, `admin-confirm-`, `admin-forget-`, `admin-initiate-`, `admin-respond-`, `admin-link-`, `admin-add-`, `admin-remove-` | Cognito admin mutations; `admin-get-*`/`admin-list-*` remain readable |
+| **Device** | `forget-` | Cognito device removal |
+| **Session** | `global-` | Cognito global sign-out |
+| **Service control** | `pause-` | App Runner service pause |
+| **Signaling** | `signal-` | CloudFormation resource signal |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
