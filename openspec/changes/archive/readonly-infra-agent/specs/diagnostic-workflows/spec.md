@@ -26,7 +26,9 @@ The agent MUST follow a systematic procedure to diagnose pod crashes.
   1. Image name and tag from describe
   2. Events showing pull errors
   3. Registry authentication status (without exposing secrets)
-
+  4. If image is from ECR: `aws ecr describe-images --repository-name <repo> --image-ids imageTag=<tag>`
+  5. If tag not found: `aws ecr list-images --repository-name <repo> --filter tagStatus=TAGGED`
+  6. Repository existence: `aws ecr describe-repositories --repository-names <repo>`
 ---
 
 ### Requirement: Node Issue Diagnosis
