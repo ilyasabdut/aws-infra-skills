@@ -155,6 +155,9 @@ Read operations are generally allowed:
 | **Resolve** | `resolve-` | SSM Incidents resolve |
 | **Notify** | `notify-` | Proton deployment status notification |
 | **Connect** | `connect-` | Elastic Inference instance connection |
+| **Transfer** | `transfer-` | MediaLive input device transfer |
+| **Expire** | `expire-` | AppStream session expiration |
+| **Index** | `index-` | Rekognition index-faces (writes to collection) |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
