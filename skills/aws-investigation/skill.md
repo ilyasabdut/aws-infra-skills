@@ -1628,4 +1628,45 @@ aws xray get-sampling-rules
 
 ---
 
+## ECR Investigation
+
+### List repositories
+```bash
+aws ecr describe-repositories
+aws ecr describe-repositories --registry-id <account-id>
+```
+
+### List images in a repository
+```bash
+aws ecr list-images --repository-name <name>
+aws ecr list-images --repository-name <name> --filter tagStatus=TAGGED
+```
+
+### Describe images (metadata, scan findings, pushed date)
+```bash
+aws ecr describe-images --repository-name <name>
+aws ecr describe-images --repository-name <name> --image-ids imageTag=<tag>
+```
+
+### Image scan findings
+```bash
+aws ecr describe-image-scan-findings \
+  --repository-name <name> \
+  --image-id imageTag=<tag>
+```
+
+### Repository lifecycle policy (read-only)
+```bash
+aws ecr get-lifecycle-policy --repository-name <name>
+aws ecr get-repository-policy --repository-name <name>
+```
+
+### Get authorization token (for image pull inspection)
+```bash
+aws ecr get-authorization-token
+```
+
+---
+
+
 **Important**: This skill only covers read operations. Mutating operations (create, delete, modify, update) should be blocked by a safety hook in production agent environments.
