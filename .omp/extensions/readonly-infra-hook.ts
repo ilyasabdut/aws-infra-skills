@@ -278,6 +278,15 @@ const AWS_MUTATION_VERBS = [
 	"reopen-",
 	// Verify
 	"verify-",
+	// Acknowledge
+	"acknowledge-",
+	// Initialize
+	"initialize-",
+	// Subscribe (bare verbs, no trailing dash)
+	"subscribe",
+	"unsubscribe",
+	// Vote
+	"vote-",
 	// Other
 	"add-",
 	"write-",
