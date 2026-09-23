@@ -211,6 +211,17 @@ const AWS_MUTATION_VERBS = [
 	"pause-",
 	// Signaling
 	"signal-",
+	// Upload
+	"upload-",
+	// Deprecation
+	"deprecate-",
+	"undeprecate-",
+	// Disposal
+	"dispose-",
+	// Delivery
+	"deliver-",
+	// Reservation
+	"reserve-",
 	// Other
 	"add-",
 	"write-",
