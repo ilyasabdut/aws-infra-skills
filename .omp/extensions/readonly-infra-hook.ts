@@ -248,6 +248,17 @@ const AWS_MUTATION_VERBS = [
 	"expire-",
 	// Index
 	"index-",
+	// Archive
+	"archive-",
+	// License
+	"checkin-",
+	"checkout-",
+	// Configure
+	"configure-",
+	// Launch
+	"launch-",
+	// Upgrade
+	"upgrade-",
 	// Other
 	"add-",
 	"write-",
