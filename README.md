@@ -41,6 +41,33 @@ This project provides skills that teach AI agents (Claude, Claude Code, omp) how
 | **diagnostic-workflows** | Step-by-step diagnosis for pod crashes, RDS, Lambda, SQS, ALB, EC2, API Gateway, CloudFront, DynamoDB, ElastiCache, Step Functions, Kinesis, CodeBuild, CodePipeline, EventBridge, Cognito, OpenSearch, ECS, Auto Scaling, SNS, WAF, Route53, ACM, Secrets Manager, S3, SSM, VPC, CloudTrail, EFS, Service Quotas, Redshift, Athena, Glue, EMR, Backup, Cost Explorer, Security Hub, GuardDuty, Inspector, Config, X-Ray |
 | **safety-hook** | Documentation + script that blocks dangerous operations |
 
+## Service Coverage
+
+### Fully Integrated (tested & documented)
+
+| Service | Read Operations | Write Blocked |
+|---------|-----------------|---------------|
+| **EC2** | `describe-instances`, `describe-volumes`, `describe-security-groups` | `terminate-`, `run-`, `modify-`, `create-` |
+| **EKS** | `describe-cluster`, `list-clusters`, `describe-nodegroup` | `create-`, `delete-`, `update-` |
+| **ECR** | `describe-repositories`, `list-images`, `get-authorization-token` | `delete-`, `put-`, `create-` |
+| **Kubernetes** | `get`, `describe`, `logs`, `top`, `events` | `apply`, `delete`, `exec`, `scale`, `edit`, `patch` |
+
+### Partially Integrated (read allowed, mutations blocked by verb patterns)
+
+- CloudWatch, CloudWatch Logs, S3 (read), RDS, Lambda, SQS, SNS, Route53
+- Secrets Manager, SSM, ECS, DynamoDB, API Gateway, ElastiCache
+- Step Functions, EventBridge, CloudFront, WAF, Kinesis, CodeBuild
+- Many others via 153 mutation verb patterns
+
+### Not Integrated (full service block)
+
+| Service | Reason |
+|---------|--------|
+| **IAM** | `aws iam *` blocked - privilege escalation risk |
+| **Organizations** | `aws organizations *` blocked - account-level changes |
+| **STS assume-role** | Blocked - prevents credential escalation |
+
+
 ## Installation
 
 ### Claude (claude.ai)
