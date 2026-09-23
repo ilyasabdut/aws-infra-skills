@@ -14,21 +14,42 @@ ITERATIONS=100
 
 # Test commands (mix of allowed and blocked)
 COMMANDS=(
+    # Kubernetes - allowed
     "kubectl get pods -n default"
     "kubectl describe pod test -n default"
     "kubectl logs test -n default"
+    # Kubernetes - blocked
     "kubectl delete pod test"
     "kubectl apply -f test.yaml"
     "kubectl exec -it test -- bash"
+    # EKS - allowed
     "aws eks describe-cluster --name test"
     "aws eks list-clusters"
+    # EKS - blocked
+    "aws eks create-cluster --name test"
+    "aws eks delete-cluster --name test"
+    # EC2 - allowed
     "aws ec2 describe-instances"
-    "aws iam list-users"
+    "aws ec2 describe-volumes"
+    # EC2 - blocked
     "aws ec2 terminate-instances --instance-ids i-123"
+    "aws ec2 run-instances --image-id ami-123"
+    # ECR - allowed
+    "aws ecr describe-repositories"
+    "aws ecr list-images --repository-name test"
+    # ECR - blocked
+    "aws ecr delete-repository --repository-name test"
+    "aws ecr put-image --repository-name test"
+    # IAM - blocked (full service)
+    "aws iam list-users"
+    # S3 - allowed
     "aws s3 ls"
+    # S3 - blocked
     "aws s3 rm s3://bucket/key"
+    # Credential protection - blocked
     "env"
     "printenv"
+    # Eval bypass - blocked
     "python -c import boto3"
 )
 
