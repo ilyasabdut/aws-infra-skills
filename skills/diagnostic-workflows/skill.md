@@ -1265,7 +1265,15 @@ aws ecs describe-tasks --cluster <cluster-name> --tasks <task-arn> \
 aws ecs describe-task-definition --task-definition <task-def> \
   --query 'taskDefinition.{CPU:cpu,Memory:memory,Containers:containerDefinitions[].{Name:name,Image:image,Memory:memory}}'
 
-# 6. Check cluster capacity (for EC2 launch type)
+# 6. If image pull failure — verify image exists in ECR
+aws ecr describe-images \
+  --repository-name <repo-name> \
+  --image-ids imageTag=<tag>
+
+# 7. List available ECR tags if image not found
+aws ecr list-images --repository-name <repo-name> --filter tagStatus=TAGGED
+
+# 8. Check cluster capacity (for EC2 launch type)
 aws ecs describe-clusters --clusters <cluster-name> \
   --query 'clusters[].{RegisteredInstances:registeredContainerInstancesCount,RunningTasks:runningTasksCount,PendingTasks:pendingTasksCount}'
 ```
