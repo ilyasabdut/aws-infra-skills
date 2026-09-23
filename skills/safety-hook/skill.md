@@ -163,6 +163,11 @@ Read operations are generally allowed:
 | **Configure** | `configure-` | MediaTailor channel configuration |
 | **Launch** | `launch-` | Evidently experiment launch |
 | **Upgrade** | `upgrade-` | CloudDirectory schema upgrade |
+| **Activate** | `activate-`, `deactivate-` | WorkDocs/Cloud9 user activation |
+| **Batch stop** | `batch-stop-` | Glue batch-stop-job-run |
+| **Record** | `record-` | SWF activity heartbeat |
+| **Respond** | `respond-` | SWF activity task completion |
+| **Sync** | `sync-` | RoboMaker deployment sync |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
