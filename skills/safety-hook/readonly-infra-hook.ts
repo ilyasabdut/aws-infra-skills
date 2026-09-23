@@ -242,6 +242,12 @@ const AWS_MUTATION_VERBS = [
 	"notify-",
 	// Connect
 	"connect-",
+	// Transfer
+	"transfer-",
+	// Expire
+	"expire-",
+	// Index
+	"index-",
 	// Other
 	"add-",
 	"write-",
