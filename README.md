@@ -67,6 +67,7 @@ This project provides skills that teach AI agents (Claude, Claude Code, omp) how
 | **Organizations** | `aws organizations *` blocked - account-level changes |
 | **STS assume-role** | Blocked - prevents credential escalation |
 
+📋 **[Full integration details →](docs/INTEGRATION_STATUS.md)**
 
 ## Installation
 
