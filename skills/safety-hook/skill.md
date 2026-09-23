@@ -172,6 +172,10 @@ Read operations are generally allowed:
 | **Hibernate** | `hibernate-` | EC2 instance hibernation |
 | **Reopen** | `reopen-` | Support case reopening |
 | **Verify** | `verify-` | SES email identity verification |
+| **Acknowledge** | `acknowledge-` | SSM Contacts page acknowledgment |
+| **Initialize** | `initialize-` | CloudHSM cluster initialization |
+| **Subscribe** | `subscribe`, `unsubscribe` | CodeStar Notifications (bare verbs) |
+| **Vote** | `vote-` | Managed Blockchain proposal voting |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |

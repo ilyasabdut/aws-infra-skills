@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.25] - 2026-09-23
+
+### Fixed
+- **safety-hook**: Block additional mutation verbs (153 patterns total):
+  - `acknowledge-` (SSM Contacts page acknowledgment)
+  - `initialize-` (CloudHSM cluster initialization)
+  - `subscribe`, `unsubscribe` (CodeStar Notifications - bare verbs)
+  - `vote-` (Managed Blockchain proposal voting)
+
+### Documentation
+- Clarified core service coverage: EC2, EKS, ECR, Kubernetes fully integrated
+
 ## [1.23.24] - 2026-09-23
 
 ### Fixed
@@ -533,6 +545,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.23.25]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.24...v1.23.25
 [1.23.24]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.23...v1.23.24
 [1.23.23]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.22...v1.23.23
 [1.23.22]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.21...v1.23.22
