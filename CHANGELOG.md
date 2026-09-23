@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.19] - 2026-09-23
+
+### Fixed
+- **safety-hook**: Block additional mutation verbs (127 patterns total):
+  - `decline-` (Security Hub/Macie invitation decline)
+  - `deploy-` (AppConfig configuration deploy)
+  - `grant-` (Lake Formation permissions grant)
+  - `group-`, `ungroup-` (Resource Groups grouping)
+  - `issue-` (ACM PCA certificate issuance)
+  - `peer-`, `unpeer-` (Lightsail VPC peering)
+  - `resolve-` (SSM Incidents resolve)
+
 ## [1.23.18] - 2026-09-23
 
 ### Fixed
@@ -477,6 +489,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.23.19]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.18...v1.23.19
 [1.23.18]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.17...v1.23.18
 [1.23.17]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.16...v1.23.17
 [1.23.16]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.15...v1.23.16
