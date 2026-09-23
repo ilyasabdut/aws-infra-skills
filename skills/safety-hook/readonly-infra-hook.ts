@@ -259,6 +259,17 @@ const AWS_MUTATION_VERBS = [
 	"launch-",
 	// Upgrade
 	"upgrade-",
+	// Activate/Deactivate
+	"activate-",
+	"deactivate-",
+	// Batch stop
+	"batch-stop-",
+	// Record
+	"record-",
+	// Respond
+	"respond-",
+	// Sync
+	"sync-",
 	// Other
 	"add-",
 	"write-",
