@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.16] - 2026-09-23
+
+### Fixed
+- **safety-hook**: Block additional mutation verbs (94 patterns total):
+  - `invalidate-` (CodeBuild project cache invalidation)
+  - `override-` (CodeCommit approval rule override)
+  - `post-` (CodeCommit comment posting)
+  - `resend-` (ACM validation email resend)
+  - `split-` (Kinesis shard split)
+
 ## [1.23.15] - 2026-09-23
 
 ### Fixed
@@ -445,6 +455,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.23.16]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.15...v1.23.16
 [1.23.15]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.14...v1.23.15
 [1.23.14]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.13...v1.23.14
 [1.23.13]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.12...v1.23.13
