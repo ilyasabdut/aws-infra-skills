@@ -158,6 +158,7 @@ const AWS_MUTATION_VERBS = [
 	// Completion
 	"complete-",
 	"abort-",
+	"continue-",
 	// Monitoring
 	"monitor-",
 	"unmonitor-",
@@ -165,6 +166,16 @@ const AWS_MUTATION_VERBS = [
 	"purge-",
 	// Rebuild
 	"rebuild-",
+	// Merge
+	"merge-",
+	// Swap
+	"swap-",
+	// Compose
+	"compose-",
+	// Retry
+	"retry-",
+	// Trigger
+	"trigger-",
 	// Other
 	"add-",
 	"write-",
