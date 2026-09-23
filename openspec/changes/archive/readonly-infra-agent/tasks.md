@@ -63,3 +63,9 @@
 - [x] 6.8 Test hook allows `aws eks describe-cluster`
 - [x] 6.9 Test hook blocks `env` and `printenv`
 - [x] 6.10 Test skills load correctly in omp session
+- [x] 6.11 Test hook allows `aws ecr describe-repositories`
+- [x] 6.12 Test hook allows `aws ecr list-images`
+- [x] 6.13 Test hook blocks `aws ecr delete-repository`
+- [x] 6.14 Test hook blocks `aws ecr put-image`
+- [x] 6.15 Test hook blocks `aws ec2 run-instances`
+- [x] 6.16 Test hook blocks `aws eks create-cluster`
