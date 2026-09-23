@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.18] - 2026-09-23
+
+### Fixed
+- **safety-hook**: Block additional mutation verbs (118 patterns total):
+  - `upload-` (S3 multipart upload)
+  - `deprecate-` (IoT thing type deprecation)
+  - `undeprecate-` (IoT undeprecation)
+  - `dispose-` (CodeArtifact package disposal)
+  - `deliver-` (Config snapshot delivery)
+  - `reserve-` (Ground Station contact reservation)
+
 ## [1.23.17] - 2026-09-23
 
 ### Fixed
@@ -466,6 +477,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.23.18]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.17...v1.23.18
 [1.23.17]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.16...v1.23.17
 [1.23.16]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.15...v1.23.16
 [1.23.15]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.14...v1.23.15
