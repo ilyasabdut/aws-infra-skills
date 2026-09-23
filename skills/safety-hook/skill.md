@@ -130,6 +130,11 @@ Read operations are generally allowed:
 | **Compose** | `compose-` | Elastic Beanstalk compose-environments |
 | **Retry** | `retry-` | CodePipeline retry-stage-execution |
 | **Trigger** | `trigger-` | Glue crawler triggers |
+| **Invalidate** | `invalidate-` | CodeBuild project cache invalidation |
+| **Override** | `override-` | CodeCommit approval rule override |
+| **Post** | `post-` | CodeCommit comment posting |
+| **Resend** | `resend-` | ACM validation email resend |
+| **Split** | `split-` | Kinesis shard split |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
