@@ -270,6 +270,14 @@ const AWS_MUTATION_VERBS = [
 	"respond-",
 	// Sync
 	"sync-",
+	// Claim
+	"claim-",
+	// Hibernate
+	"hibernate-",
+	// Reopen
+	"reopen-",
+	// Verify
+	"verify-",
 	// Other
 	"add-",
 	"write-",
