@@ -132,13 +132,27 @@ kubectl get pod <pod> -n <namespace> -o jsonpath='{.spec.imagePullSecrets}'
 
 # 4. Verify secret exists
 kubectl get secrets -n <namespace> | grep docker
+
+# 5. If image is from ECR — verify the image and tag exist
+aws ecr describe-images \
+  --repository-name <repo-name> \
+  --image-ids imageTag=<tag>
+
+# 6. List available tags (in case tag was wrong or deleted)
+aws ecr list-images \
+  --repository-name <repo-name> \
+  --filter tagStatus=TAGGED
+
+# 7. Check ECR repository exists
+aws ecr describe-repositories --repository-names <repo-name>
 ```
 
 **Likely causes:**
 - Image doesn't exist (typo in name/tag)
-- Registry authentication failed
+- Registry authentication failed (ECR token expired — tokens last 12h)
 - Network cannot reach registry
-- Image was deleted
+- Image was deleted from ECR
+- ECR repository does not exist
 
 ### Pending Pod
 
