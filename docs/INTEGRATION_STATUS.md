@@ -114,5 +114,5 @@ These are covered by the 153 mutation verb patterns but don't have:
 
 ## Test Coverage
 
-- **Hook tests**: 55 tests (all pass)
+- **Hook tests**: 61 tests (all pass)
 - **Core services**: 28 manual tests (EC2: 6, EKS: 6, ECR: 6, K8s: 10)
