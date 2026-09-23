@@ -109,3 +109,34 @@ The agent MUST be able to list and read S3 objects for configuration/logs stored
 #### Scenario: Get object (read)
 - **WHEN** agent needs to read an object
 - **THEN** agent runs `aws s3 cp s3://<bucket>/<key> -` and receives object contents to stdout
+---
+
+## UPDATED Requirements
+
+*Updated 2026-09-23 — v1.23.25*
+
+---
+
+### Requirement: ECR Investigation (Read-Only)
+
+The agent MUST be able to inspect ECR repositories and images.
+
+#### Scenario: List repositories
+- **WHEN** agent needs to see container registries
+- **THEN** agent runs `aws ecr describe-repositories` and receives repository names, URIs, and ARNs
+
+#### Scenario: List images in a repository
+- **WHEN** agent needs to see available images
+- **THEN** agent runs `aws ecr list-images --repository-name <name>` and receives image tags and digests
+
+#### Scenario: Describe images
+- **WHEN** agent needs image metadata (pushed date, size, scan findings)
+- **THEN** agent runs `aws ecr describe-images --repository-name <name>` and receives full image details
+
+#### Scenario: Get authorization token (read-only pull)
+- **WHEN** agent needs to pull an image for inspection
+- **THEN** agent runs `aws ecr get-authorization-token` and receives a temporary read token
+
+#### Scenario: Block ECR write operations
+- **WHEN** agent runs `aws ecr delete-repository|put-image|create-repository`
+- **THEN** command is blocked (covered by mutation verb patterns: delete-, put-, create-)
