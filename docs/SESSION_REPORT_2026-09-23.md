@@ -167,6 +167,26 @@ Generated: 2026-09-23 04:29 UTC
 | Skills | 4 |
 | OpenSpec specs | 4 |
 
+## Performance Benchmark
+
+```
+$ ./autoresearch.sh
+Running 100 iterations of 24 commands (2400 total checks)...
+
+Results:
+  Total time: 16624ms
+  Commands checked: 2400
+  Passed: 1000, Failed: 1400 (blocked as expected)
+  Pass rate: 41.7%
+  Avg latency: 6.927ms per check
+```
+
+| Metric | Value |
+|--------|-------|
+| Avg latency | 6.927ms |
+| Throughput | ~144 checks/sec |
+| Test mix | 24 commands (10 allowed, 14 blocked) |
+
 ---
 
 ## GitHub Actions CI Status
