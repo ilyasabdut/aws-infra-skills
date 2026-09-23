@@ -186,6 +186,31 @@ const AWS_MUTATION_VERBS = [
 	"resend-",
 	// Split
 	"split-",
+	// Cache
+	"flush-",
+	// Admin ops (specific mutations only; admin-get-*, admin-list-* remain readable)
+	"admin-delete-",
+	"admin-disable-",
+	"admin-enable-",
+	"admin-reset-",
+	"admin-set-",
+	"admin-update-",
+	"admin-create-",
+	"admin-confirm-",
+	"admin-forget-",
+	"admin-initiate-",
+	"admin-respond-",
+	"admin-link-",
+	"admin-add-",
+	"admin-remove-",
+	// Device
+	"forget-",
+	// Session
+	"global-",
+	// Service control
+	"pause-",
+	// Signaling
+	"signal-",
 	// Other
 	"add-",
 	"write-",
