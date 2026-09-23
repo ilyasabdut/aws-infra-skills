@@ -238,6 +238,10 @@ const AWS_MUTATION_VERBS = [
 	"unpeer-",
 	// Resolve
 	"resolve-",
+	// Notify
+	"notify-",
+	// Connect
+	"connect-",
 	// Other
 	"add-",
 	"write-",
