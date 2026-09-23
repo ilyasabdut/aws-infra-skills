@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.26] - 2026-09-23
+
+### Added
+- **aws-investigation skill**: ECR Investigation section with describe-repositories, list-images, describe-images, image scan findings, lifecycle policy, get-authorization-token
+- **docs**: `docs/INTEGRATION_STATUS.md` — full service coverage matrix, 153 mutation verb pattern index, exceptions, and test coverage summary
+- **docs**: Service Coverage section in README with fully/partially/not-integrated tiers
+
+### Changed
+- **test-hook.sh**: Added ECR test cases (61 tests total, was 55)
+- **autoresearch.sh**: Added ECR commands to benchmark (24 commands)
+- **openspec**: Updated safety-hook spec with 153-pattern scenarios, EC2/EKS/ECR service scenarios
+- **openspec**: Updated aws-investigation spec with ECR requirement
+- **openspec**: Added integration test tasks 6.11–6.16
+
 ## [1.23.25] - 2026-09-23
 
 ### Fixed
@@ -545,6 +559,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TypeScript Extension**: omp-compatible hook at `.omp/extensions/readonly-infra-hook.ts`
 - **Bash Script**: Standalone hook at `.omp/hooks/readonly-infra.sh`
 
+[1.23.26]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.25...v1.23.26
 [1.23.25]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.24...v1.23.25
 [1.23.24]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.23...v1.23.24
 [1.23.23]: https://github.com/ilyasabdut/aws-infra-skills/compare/v1.23.22...v1.23.23
