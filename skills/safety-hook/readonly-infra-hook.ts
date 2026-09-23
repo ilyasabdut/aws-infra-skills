@@ -222,6 +222,22 @@ const AWS_MUTATION_VERBS = [
 	"deliver-",
 	// Reservation
 	"reserve-",
+	// Decline
+	"decline-",
+	// Deploy
+	"deploy-",
+	// Grant
+	"grant-",
+	// Group
+	"group-",
+	"ungroup-",
+	// Issue
+	"issue-",
+	// Peer
+	"peer-",
+	"unpeer-",
+	// Resolve
+	"resolve-",
 	// Other
 	"add-",
 	"write-",
