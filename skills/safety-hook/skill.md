@@ -141,6 +141,11 @@ Read operations are generally allowed:
 | **Session** | `global-` | Cognito global sign-out |
 | **Service control** | `pause-` | App Runner service pause |
 | **Signaling** | `signal-` | CloudFormation resource signal |
+| **Upload** | `upload-` | S3 multipart upload |
+| **Deprecation** | `deprecate-`, `undeprecate-` | IoT thing type deprecation |
+| **Disposal** | `dispose-` | CodeArtifact package disposal |
+| **Delivery** | `deliver-` | Config snapshot delivery |
+| **Reservation** | `reserve-` | Ground Station contact reservation |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
