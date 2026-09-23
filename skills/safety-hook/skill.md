@@ -158,6 +158,11 @@ Read operations are generally allowed:
 | **Transfer** | `transfer-` | MediaLive input device transfer |
 | **Expire** | `expire-` | AppStream session expiration |
 | **Index** | `index-` | Rekognition index-faces (writes to collection) |
+| **Archive** | `archive-` | Detective finding archival |
+| **License** | `checkin-`, `checkout-` | License Manager license operations |
+| **Configure** | `configure-` | MediaTailor channel configuration |
+| **Launch** | `launch-` | Evidently experiment launch |
+| **Upgrade** | `upgrade-` | CloudDirectory schema upgrade |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
