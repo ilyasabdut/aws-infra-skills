@@ -146,6 +146,13 @@ Read operations are generally allowed:
 | **Disposal** | `dispose-` | CodeArtifact package disposal |
 | **Delivery** | `deliver-` | Config snapshot delivery |
 | **Reservation** | `reserve-` | Ground Station contact reservation |
+| **Decline** | `decline-` | Security Hub/Macie invitation decline |
+| **Deploy** | `deploy-` | AppConfig configuration deploy |
+| **Grant** | `grant-` | Lake Formation permissions grant |
+| **Group** | `group-`, `ungroup-` | Resource Groups grouping |
+| **Issue** | `issue-` | ACM PCA certificate issuance |
+| **Peer** | `peer-`, `unpeer-` | Lightsail VPC peering |
+| **Resolve** | `resolve-` | SSM Incidents resolve |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
