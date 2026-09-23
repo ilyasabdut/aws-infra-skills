@@ -121,10 +121,15 @@ Read operations are generally allowed:
 | **BYOIP** | `advertise-`, `withdraw-` | BYOIP advertisement |
 | **Rotation** | `rotate-`, `renew-` | Secret/certificate rotation |
 | **Scaling** | `scale-` | Autoscaling operations |
-| **Completion** | `complete-`, `abort-` | Lifecycle actions, multipart uploads |
+| **Completion** | `complete-`, `abort-`, `continue-` | Lifecycle actions, multipart uploads |
 | **Monitoring** | `monitor-`, `unmonitor-` | EC2 detailed monitoring |
 | **Cleanup** | `purge-` | SQS queue purging, cache purging |
 | **Rebuild** | `rebuild-` | Elastic Beanstalk environment rebuild |
+| **Merge** | `merge-` | CodeCommit branch/PR merges |
+| **Swap** | `swap-` | Elastic Beanstalk CNAME swap |
+| **Compose** | `compose-` | Elastic Beanstalk compose-environments |
+| **Retry** | `retry-` | CodePipeline retry-stage-execution |
+| **Trigger** | `trigger-` | Glue crawler triggers |
 | **Other** | `add-`, `write-` | Additional mutations |
 | **S3** | `aws s3 rm`, `aws s3 cp <local> s3://` | Object deletion/upload |
 | **STS** | `aws sts assume-role` | Privilege escalation |
